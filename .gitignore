@@ -1,0 +1,42 @@
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+*.env
+.env*
+*.sqlite3
+
+# Django
+db.sqlite3
+/media/
+staticfiles/
+local_settings.py
+
+# Docker
+*.log
+*.pid
+
+# PostgreSQL (por si acaso generas dumps locales)
+*.pgsql
+*.sql
+
+# Node (por si usas algún paquete JS en el futuro)
+node_modules/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# VSCode/IDE
+.vscode/
+.idea/
+
+# Archivos temporales
+*.swp
+*.bak
+*.tmp
+
+# Otros
+*.coverage
+htmlcov/
