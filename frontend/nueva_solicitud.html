@@ -1113,56 +1113,22 @@
 
             showLoading(); // Muestra la pantalla de carga
 
-            // Recopilar datos de los pasos 1 y 2
-            const personalData = {
-                full_name: `${document.getElementById('nombres').value} ${document.getElementById('apellidos').value}`,
-                dni: document.getElementById('dni').value,
-                birth_date: document.getElementById('fechaNacimiento').value, // Formato YYYY-MM-DD
-                phone_number: document.getElementById('telefono').value,
-                email: document.getElementById('email').value,
-                address: document.getElementById('direccion').value,
-                marital_status: document.getElementById('estadoCivil').value,
-                dependents: parseInt(document.getElementById('dependientes').value)
-            };
-
-            const creditData = {
-                amount: parseFloat(document.getElementById('montoSolicitado').value),
-                term_months: parseInt(document.getElementById('plazoMeses').value),
-                purpose: document.getElementById('proposito').value,
-                monthly_income: parseFloat(document.getElementById('ingresosMensuales').value),
-                job_type: document.getElementById('tipoTrabajo').value,
-                company_employer: document.getElementById('empresa').value,
-                additional_description: document.getElementById('descripcion').value || null
-            };
-
             let applicationId = null;
-
             try {
-                
+                // Solo enviar los campos válidos para el modelo Application
                 const applicationPayload = {
-                    ...creditData,
+                    amount: parseFloat(document.getElementById('montoSolicitado').value),
+                    term_months: parseInt(document.getElementById('plazoMeses').value),
+                    purpose: document.getElementById('proposito').value
                 };
 
                 const responseApplication = await fetchAuthenticated('http://localhost:8000/api/applications/', {
                     method: 'POST',
-                    //headers:   {},
                     body: JSON.stringify(applicationPayload)
                 });
 
-                if (!responseApplication.ok) {
-                    const errorData = await responseApplication.json();
-                    let errorMessage = 'Error al crear la solicitud. ';
-                    if (errorData) {
-                        for (const key in errorData) {
-                            if (errorData.hasOwnProperty(key)) {
-                                errorMessage += `${key}: ${errorData[key].join(', ')}. `;
-                            }
-                        }
-                    }
-                    throw new Error(errorMessage);
-                }
-
-                const newApplication = await responseApplication.json();
+                // Usar directamente el objeto JSON retornado
+                const newApplication = responseApplication;
                 applicationId = newApplication.id; // Guarda el ID de la solicitud creada
                 showNotification(`Solicitud #${applicationId} creada exitosamente. Ahora subiendo documentos...`, 'success');
 
@@ -1226,9 +1192,9 @@
                                 body: formData, // fetch configura Content-Type: multipart/form-data automáticamente
                             });
 
-                            if (!response.ok) {
-                                const errorData = await response.json();
-                                console.error(`Error al subir documento ${docType} - ${file.name}:`, errorData);
+                            // fetchAuthenticated ya retorna el JSON parseado
+                            if (response && response.error) {
+                                console.error(`Error al subir documento ${docType} - ${file.name}:`, response.error);
                                 showNotification(`Error al subir ${docType} - ${file.name}.`, 'error');
                                 allDocumentsUploaded = false; // Marcar que al menos uno falló
                             } else {

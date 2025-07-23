@@ -56,16 +56,16 @@
                 <i class="fas fa-folder-open"></i> Documentos
             </button>
             <!-- NUEVO: Enlace para Evaluadores -->
-            <button class="nav-tab d-none" onclick="irAEvaluacion()" id="evaluacionTab">
+            <!-- <button class="nav-tab d-none" onclick="irAEvaluacion()" id="evaluacionTab">
                 <i class="fas fa-search"></i> Evaluación
-            </button>
+            </button> -->
             <!-- NUEVO: Enlace para Administradores -->
-            <button class="nav-tab d-none" onclick="irAAdmin()" id="adminTab">
+            <!-- <button class="nav-tab d-none" onclick="irAAdmin()" id="adminTab">
                 <i class="fas fa-cogs"></i> Administración
-            </button>
-            <button class="nav-tab d-none" onclick="showSection('reportes')" id="reportesTab">
+            </button> -->
+            <!-- <button class="nav-tab d-none" onclick="showSection('reportes')" id="reportesTab">
                 <i class="fas fa-chart-bar"></i> Reportes
-            </button>
+            </button> -->
         </nav>
 
         <!-- Dashboard Section -->
@@ -87,7 +87,7 @@
                     <div class="row" id="quickActionsRow">
                         <!-- Acciones para TODOS los usuarios -->
                         <div class="col-4">
-                            <a href="nueva-solicitud.html" class="btn btn-primary btn-block btn-lg">
+                            <a href="nueva_solicitud.html" class="btn btn-primary btn-block btn-lg">
                                 <i class="fas fa-plus-circle"></i>
                                 <br>
                                 Nueva Solicitud
@@ -135,28 +135,28 @@
                     <div class="stat-icon">
                         <i class="fas fa-file-alt"></i>
                     </div>
-                    <div class="stat-number" id="totalSolicitudes">3</div>
+                    <div class="stat-number" id="totalSolicitudes">0</div>
                     <div class="stat-label">Total Solicitudes</div>
                 </div>
                 <div class="stat-card bounce-in">
                     <div class="stat-icon">
                         <i class="fas fa-check-circle"></i>
                     </div>
-                    <div class="stat-number" id="solicitudesAprobadas">1</div>
+                    <div class="stat-number" id="solicitudesAprobadas">0</div>
                     <div class="stat-label">Aprobadas</div>
                 </div>
                 <div class="stat-card bounce-in">
                     <div class="stat-icon">
                         <i class="fas fa-clock"></i>
                     </div>
-                    <div class="stat-number" id="solicitudesPendientes">2</div>
+                    <div class="stat-number" id="solicitudesPendientes">0</div>
                     <div class="stat-label">Pendientes</div>
                 </div>
                 <div class="stat-card bounce-in">
                     <div class="stat-icon">
                         <i class="fas fa-dollar-sign"></i>
                     </div>
-                    <div class="stat-number" id="montoTotal">S/ 15,000</div>
+                    <div class="stat-number" id="montoTotal">S/ 0.00</div>
                     <div class="stat-label">Monto Aprobado</div>
                 </div>
             </div>
@@ -168,12 +168,12 @@
                 </div>
                 <div class="card-body text-center">
                     <div class="score-circle">
-                        <div class="score-text" id="scoreValue">75</div>
+                        <div class="score-text" id="scoreValue">-</div>
                     </div>
-                    <h4>Score: <span id="scoreText">Bueno</span></h4>
+                    <h4>Score: <span id="scoreText">-</span></h4>
                     <p>Tu score crediticio te permite acceder a créditos con tasas preferenciales.</p>
                     <div class="progress">
-                        <div class="progress-bar" style="width: 75%"></div>
+                        <div class="progress-bar" id="scoreProgressBar" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
@@ -198,29 +198,8 @@
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td>#001</td>
-                                    <td>15/05/2025</td>
-                                    <td>S/ 15,000</td>
-                                    <td><span class="badge status-aprobada">Aprobada</span></td>
-                                    <td>
-                                        <button class="btn btn-primary btn-sm" onclick="verDetalle('001')">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>#002</td>
-                                    <td>18/05/2025</td>
-                                    <td>S/ 25,000</td>
-                                    <td><span class="badge status-revision">En Revisión</span></td>
-                                    <td>
-                                        <button class="btn btn-primary btn-sm" onclick="verDetalle('002')">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                    </td>
-                                </tr>
+                            <tbody id="recentSolicitudesTableBody">
+                                <!-- Se llenará dinámicamente -->
                             </tbody>
                         </table>
                     </div>
@@ -320,6 +299,7 @@
         </section>
 
         <!-- Evaluación Section (Solo para Evaluadores/Admin) -->
+        <!--
         <section id="evaluacion" class="content-section">
             <div class="card">
                 <div class="card-header">
@@ -335,8 +315,10 @@
                 </div>
             </div>
         </section>
+        -->
 
         <!-- Reportes Section (Solo para Admin) -->
+        <!--
         <section id="reportes" class="content-section">
             <div class="card">
                 <div class="card-header">
@@ -364,6 +346,7 @@
                 </div>
             </div>
         </section>
+        -->
     </div>
 
     <script src="script.js"></script>
@@ -378,7 +361,7 @@
         }
 
         function irANuevaSolicitud() {
-            window.location.href = 'nueva-solicitud.html';
+            window.location.href = 'nueva_solicitud.html';
         }
 
         // NUEVAS FUNCIONES para las páginas creadas

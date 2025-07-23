@@ -75,9 +75,14 @@ function loadUserData() {
         
         if (currentUserStr) {
             const parsedUser = JSON.parse(currentUserStr);
+
+            // Normalizar: si tiene type pero no role, asignar
+            if (parsedUser && !parsedUser.role && parsedUser.type) {
+                parsedUser.role = parsedUser.type;
+            }
+
             console.log('Usuario parseado:', parsedUser);
             
-            // Verificar que el usuario tenga los campos necesarios
             if (parsedUser && parsedUser.username && parsedUser.role && parsedUser.access_token) {
                 currentUser = parsedUser;
                 console.log('Usuario cargado exitosamente:', currentUser);
@@ -805,13 +810,13 @@ async function handleLogin(event) {
             const data = await response.json();
             const decodedToken = parseJwt(data.access);
             if (decodedToken) {
-                currentUser = {
+                currentUser = normalizarUsuario({
                     username: decodedToken.username,
                     email: decodedToken.email,
-                    role: decodedToken.role,
+                    role: decodedToken.role || decodedToken.type,
                     access_token: data.access,
                     refresh_token: data.refresh,
-                };
+                });
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 showNotification('¡Inicio de sesión exitoso!', 'success');
                 console.log('Login exitoso, redirigiendo a:', currentUser.role);
@@ -1183,12 +1188,9 @@ window.addEventListener('load', async function() {
 
 async function fetchAuthenticated(url, options = {}) {
     showLoading();
-    
-    // Asegurar que los datos del usuario estén cargados
     if (!currentUser) {
         loadUserData();
     }
-    
     const token = currentUser ? currentUser.access_token : null;
     if (!token) {
         hideLoading();
@@ -1197,44 +1199,49 @@ async function fetchAuthenticated(url, options = {}) {
         setTimeout(() => { window.location.href = 'login.html'; }, 1500);
         throw new Error('No hay token de acceso disponible.');
     }
-    
     // Crear AbortController para manejar timeouts
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos timeout
-    
     try {
+        // Detectar si el body es FormData
+        let headers = {
+            'Authorization': `Bearer ${token}`
+        };
+        if (!(options.body instanceof FormData)) {
+            headers['Content-Type'] = 'application/json';
+        }
+        if (options.headers) {
+            headers = { ...headers, ...options.headers };
+        }
         const response = await fetch(url, {
             ...options,
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                ...options.headers
-            },
+            headers,
             signal: controller.signal
         });
-        
         clearTimeout(timeoutId);
         hideLoading();
-        
         if (response.status === 401) {
             console.log('Token expirado, intentando refresh...');
             const refreshSuccess = await attemptTokenRefresh();
             if (refreshSuccess) {
                 // Reintentar con el nuevo token
                 const newUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                let retryHeaders = {
+                    'Authorization': `Bearer ${newUser.access_token}`
+                };
+                if (!(options.body instanceof FormData)) {
+                    retryHeaders['Content-Type'] = 'application/json';
+                }
+                if (options.headers) {
+                    retryHeaders = { ...retryHeaders, ...options.headers };
+                }
                 const newResponse = await fetch(url, {
                     ...options,
-                    headers: {
-                        'Authorization': `Bearer ${newUser.access_token}`,
-                        'Content-Type': 'application/json',
-                        ...options.headers
-                    }
+                    headers: retryHeaders
                 });
-                
                 if (!newResponse.ok) {
                     throw new Error(`HTTP ${newResponse.status}: ${newResponse.statusText}`);
                 }
-                
                 return await newResponse.json();
             } else {
                 showNotification('Sesión expirada. Redirigiendo al login...', 'error');
@@ -1246,12 +1253,9 @@ async function fetchAuthenticated(url, options = {}) {
         } else {
             return await response.json();
         }
-        
     } catch (error) {
         clearTimeout(timeoutId);
         hideLoading();
-        
-        // Manejar errores específicos
         if (error.name === 'AbortError') {
             console.log('Request cancelado por timeout');
             throw new Error('La solicitud tardó demasiado en completarse.');
@@ -1294,6 +1298,7 @@ async function attemptTokenRefresh() {
                 if (data.refresh) {
                     currentUser.refresh_token = data.refresh;
                 }
+                currentUser = normalizarUsuario(currentUser);
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
             }
             console.log('Token de acceso refrescado exitosamente.');
@@ -3200,7 +3205,8 @@ async function verificarToken() {
     }
     
     try {
-        const response = await fetch('http://localhost:8000/api/auth/admin-stats/', {
+        // Usar endpoint accesible a todos los roles
+        const response = await fetch('http://localhost:8000/api/applications/user-stats/', {
             headers: {
                 'Authorization': `Bearer ${currentUser.access_token}`,
                 'Content-Type': 'application/json'
@@ -3605,3 +3611,68 @@ async function crearUsuario() {
         showNotification(error.message || 'Error al crear usuario', 'error');
     }
 }
+
+// --- UTILIDAD: Normalizar usuario para asegurar campo 'role' ---
+function normalizarUsuario(user) {
+    if (user && !user.role && user.type) {
+        user.role = user.type;
+    }
+    return user;
+}
+
+// --- DASHBOARD: Cargar datos reales ---
+async function cargarDashboardDatos() {
+    if (!currentUser || !currentUser.access_token) return;
+    try {
+        // 1. Estadísticas generales y score
+        const stats = await fetchAuthenticated(`${API_BASE_URL}applications/user-stats/`);
+        document.getElementById('totalSolicitudes').textContent = stats.total_applications || 0;
+        document.getElementById('solicitudesAprobadas').textContent = stats.approved_applications || 0;
+        document.getElementById('solicitudesPendientes').textContent = stats.recent_applications_30_days || 0;
+        document.getElementById('montoTotal').textContent = `S/ ${(stats.total_amount_requested || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        // Score
+        const score = stats.credit_score || 0;
+        document.getElementById('scoreValue').textContent = score;
+        let scoreText = '-';
+        if (score >= 80) scoreText = 'Excelente';
+        else if (score >= 70) scoreText = 'Bueno';
+        else if (score >= 60) scoreText = 'Regular';
+        else if (score > 0) scoreText = 'Deficiente';
+        document.getElementById('scoreText').textContent = scoreText;
+        document.getElementById('scoreProgressBar').style.width = `${score}%`;
+        // 2. Solicitudes recientes
+        const solicitudes = await fetchAuthenticated(`${API_BASE_URL}applications/`);
+        const tbody = document.getElementById('recentSolicitudesTableBody');
+        tbody.innerHTML = '';
+        if (Array.isArray(solicitudes) && solicitudes.length > 0) {
+            // Ordenar por fecha descendente
+            solicitudes.sort((a, b) => new Date(b.application_date) - new Date(a.application_date));
+            solicitudes.slice(0, 5).forEach(s => {
+                const estadoClass = s.status === 'aprobada' ? 'status-aprobada' : s.status === 'pendiente' ? 'status-pendiente' : s.status === 'revision' ? 'status-revision' : 'status-rechazada';
+                tbody.innerHTML += `
+                    <tr>
+                        <td>#${s.id}</td>
+                        <td>${new Date(s.application_date).toLocaleDateString()}</td>
+                        <td>S/ ${Number(s.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        <td><span class="badge ${estadoClass}">${s.status.charAt(0).toUpperCase() + s.status.slice(1)}</span></td>
+                        <td><button class="btn btn-primary btn-sm" onclick="verDetalle('${s.id}')"><i class="fas fa-eye"></i></button></td>
+                    </tr>
+                `;
+            });
+        } else {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center">No tienes solicitudes recientes.</td></tr>';
+        }
+    } catch (error) {
+        console.error('Error cargando datos del dashboard:', error);
+        showNotification('Error al cargar datos del dashboard', 'error');
+    }
+}
+
+// Llamar cargarDashboardDatos al cargar el dashboard
+window.addEventListener('DOMContentLoaded', function() {
+    if (window.location.pathname.includes('dashboard.html')) {
+        setTimeout(() => {
+            cargarDashboardDatos();
+        }, 300);
+    }
+});
