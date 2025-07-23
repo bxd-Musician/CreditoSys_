@@ -1,4 +1,4 @@
-# CreditoSys - Sistema de Gestión de Créditos willie
+# CreditoSys - Sistema de Gestión de CréditoSys
 
 
 ## 📋 Descripción General
