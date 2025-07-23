@@ -3,7 +3,7 @@ from .views import (
     RegisterView, MyTokenObtainPairView, UserProfileView, AdminStatsView, AdminActivityView, 
     SystemStatusView, AdminUsersView, AdminUserDetailView, AdminUserChangeRoleView,
     AdminUserPermissionsView, AuditLogView, AuditLogDetailView, AdminReportsView, AlertasView,
-    AdminCreateUserView
+    AdminCreateUserView, UploadAvatarView
 )
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -33,4 +33,5 @@ urlpatterns = [
     
     # Alertas
     path('alertas/', AlertasView.as_view(), name='alertas'),
+    path('upload-avatar/', UploadAvatarView.as_view(), name='upload_avatar'),
 ]

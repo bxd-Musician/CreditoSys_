@@ -1,10 +1,18 @@
 let currentUser = null; 
 let isLoading = false;
-const API_BASE_URL = 'http://localhost:8000/api/'; 
+const API_BASE_URL = '/api/'; 
 
 // Variable global para controlar el monitoreo de alertas
 let alertasMonitoringInterval = null;
 let isCargandoAlertas = false;
+
+// Tipos de documentos requeridos
+const TIPOS_DOCUMENTOS_REQUERIDOS = ['dni', 'sueldo', 'cuenta', 'otros'];
+const TIPOS_DOCUMENTOS_MULTIPLES = {
+    'dni': 2,      // Anverso y reverso
+    'sueldo': 3,   // Ejemplo: 3 recibos de sueldo
+    // Puedes agregar más tipos aquí si lo necesitas
+};
 
 function parseJwt(token) {
     try {
@@ -74,12 +82,21 @@ function loadUserData() {
         console.log('Datos de usuario en localStorage:', currentUserStr);
         
         if (currentUserStr) {
-            const parsedUser = JSON.parse(currentUserStr);
+            let parsedUser = JSON.parse(currentUserStr);
 
-            // Normalizar: si tiene type pero no role, asignar
+            // Normalizar: si tiene type pero no role, asignar SOLO si no es admin ni evaluador
             if (parsedUser && !parsedUser.role && parsedUser.type) {
-                parsedUser.role = parsedUser.type;
+                // Solo asignar si el type no es admin ni evaluador
+                if (parsedUser.type !== 'admin' && parsedUser.type !== 'evaluador') {
+                    parsedUser.role = parsedUser.type;
+                }
             }
+
+            // Si el usuario ya tiene role, no modificarlo
+            // Si el usuario tiene role admin o evaluador, no modificar nada
+            // Si el usuario tiene role undefined y type, asignar solo si no es admin/evaluador
+
+            parsedUser = normalizarUsuario(parsedUser); // Refuerza la normalización
 
             console.log('Usuario parseado:', parsedUser);
             
@@ -118,7 +135,9 @@ function updateUserInterface() {
 
     // Permitir ambos: username/role y name/type
     const name = (currentUser && (currentUser.name || currentUser.username)) || '';
-    const role = (currentUser && (currentUser.type || currentUser.role)) || '';
+    let role = (currentUser && (currentUser.role || currentUser.type)) || '';
+    if (!role && currentUser && currentUser.type) role = currentUser.type;
+    if (!role && currentUser && currentUser.role) role = currentUser.role;
 
     if (!currentUser || !name || !role) {
         console.warn('Datos de usuario incompletos para actualizar la interfaz.');
@@ -520,56 +539,34 @@ function editarPerfil() {
  * Función para guardar cambios del perfil
  */
 async function guardarPerfil() {
-    const username = document.getElementById('editUsername').value.trim();
-    const email = document.getElementById('editEmail').value.trim();
-    const dni = document.getElementById('editDNI').value.trim();
-    const phone = document.getElementById('editPhone').value.trim();
-    const address = document.getElementById('editAddress').value.trim();
-    
-    // Validaciones básicas
-    if (!username || !email) {
-        showNotification('El nombre de usuario y email son obligatorios', 'error');
+    // Usar los IDs del formulario de perfil.html
+    const email = document.getElementById('profileEmail').value.trim();
+    const dni = document.getElementById('profileDNI').value.trim();
+    const phone = document.getElementById('profilePhone').value.trim();
+
+    if (!email) {
+        showNotification('El email es obligatorio', 'error');
         return;
     }
-    
     if (!validateEmail(email)) {
         showNotification('El formato del email no es válido', 'error');
         return;
     }
-    
+
     try {
-        const response = await fetchAuthenticated(`${API_BASE_URL}users/update-profile/`, {
-            method: 'PATCH',
+        const response = await fetchAuthenticated(`${API_BASE_URL}auth/profile/`, {
+            method: 'PUT',
             body: JSON.stringify({
-                username,
                 email,
                 dni,
-                phone,
-                address
+                phone
             })
         });
-        
-        if (response.ok) {
-            const updatedData = await response.json();
-            
-            // Actualizar datos en localStorage
-            const currentUserData = JSON.parse(localStorage.getItem('userData') || '{}');
-            const updatedUserData = { ...currentUserData, ...updatedData };
-            localStorage.setItem('userData', JSON.stringify(updatedUserData));
-            
-            // Actualizar interfaz
-            cargarDatosPerfil();
-            updateUserInterface();
-            
-            closeModal('editProfileModal');
-            showNotification('Perfil actualizado exitosamente', 'success');
-        } else {
-            const errorData = await response.json();
-            showNotification(errorData.detail || 'Error al actualizar el perfil', 'error');
-        }
+        showNotification('Perfil actualizado exitosamente', 'success');
+        // Recargar datos del perfil
+        cargarDatosPerfilSeguro();
     } catch (error) {
-        console.error('Error al actualizar perfil:', error);
-        showNotification('Error de conexión al actualizar el perfil', 'error');
+        showNotification('Error al actualizar el perfil', 'error');
     }
 }
 
@@ -1279,7 +1276,7 @@ async function attemptTokenRefresh() {
         return false;
     }
     try {
-        const response = await fetch('http://localhost:8000/api/auth/login/refresh/', {
+        const response = await fetch('/api/auth/login/refresh/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1454,19 +1451,10 @@ async function cargarSolicitudesDocumentos() {
 
     try {
         console.log('Haciendo petición a:', `${API_BASE_URL}applications/`);
-        const response = await fetchAuthenticated(`${API_BASE_URL}applications/`);
-        
-        if (!response.ok) {
-            console.error('Error en respuesta del servidor:', response.status);
-            throw new Error('Error al cargar las solicitudes');
-        }
-
-        const solicitudes = await response.json();
+        const solicitudes = await fetchAuthenticated(`${API_BASE_URL}applications/`);
         console.log('Solicitudes recibidas:', solicitudes);
-        
         // Limpiar opciones existentes
         selectSolicitud.innerHTML = '<option value="">Selecciona una solicitud...</option>';
-        
         // Agregar solicitudes al selector
         solicitudes.forEach(solicitud => {
             const option = document.createElement('option');
@@ -1474,11 +1462,9 @@ async function cargarSolicitudesDocumentos() {
             option.textContent = `Solicitud #${solicitud.id} - S/ ${solicitud.amount.toLocaleString()} (${solicitud.status})`;
             selectSolicitud.appendChild(option);
         });
-
         console.log(`Se agregaron ${solicitudes.length} solicitudes al selector`);
-
-        // Agregar evento para cargar documentos cuando se seleccione una solicitud
-        selectSolicitud.addEventListener('change', function() {
+        // Evento para cargar documentos al cambiar la solicitud
+        selectSolicitud.onchange = function() {
             const solicitudId = this.value;
             console.log('Solicitud seleccionada:', solicitudId);
             if (solicitudId) {
@@ -1486,8 +1472,13 @@ async function cargarSolicitudesDocumentos() {
             } else {
                 limpiarTablaDocumentos();
             }
-        });
-
+        };
+        // Si hay una solicitud seleccionada por defecto, cargar sus documentos
+        if (selectSolicitud.value) {
+            cargarDocumentosSolicitud(selectSolicitud.value);
+        } else {
+            limpiarTablaDocumentos();
+        }
     } catch (error) {
         console.error('Error al cargar solicitudes para documentos:', error);
         showNotification('Error al cargar las solicitudes', 'error');
@@ -1495,46 +1486,67 @@ async function cargarSolicitudesDocumentos() {
 }
 
 /**
- * Carga los documentos de una solicitud específica
+ * Carga los documentos de una solicitud específica y permite subir los que faltan
  * @param {string} solicitudId - ID de la solicitud
  */
 async function cargarDocumentosSolicitud(solicitudId) {
     const tablaBody = document.getElementById('documentosTableBody');
     if (!tablaBody) return;
-
     tablaBody.innerHTML = '<tr><td colspan="4" class="text-center">Cargando documentos...</td></tr>';
-
     try {
-        const response = await fetchAuthenticated(`${API_BASE_URL}applications/${solicitudId}/documents/`);
-        
-        if (!response.ok) {
-            throw new Error('Error al cargar los documentos');
-        }
-
-        const documentos = await response.json();
-        
+        const documentos = await fetchAuthenticated(`${API_BASE_URL}applications/${solicitudId}/documents/`);
         tablaBody.innerHTML = '';
-        
-        if (documentos.length === 0) {
-            tablaBody.innerHTML = '<tr><td colspan="4" class="text-center">No hay documentos subidos para esta solicitud.</td></tr>';
-        } else {
-            documentos.forEach(documento => {
-                const fila = `
-                    <tr>
-                        <td>${documento.document_type || 'Documento'}</td>
-                        <td><span class="status ${documento.status}">${documento.status}</span></td>
-                        <td>${new Date(documento.uploaded_at).toLocaleDateString()}</td>
-                        <td>
-                            <button class="btn btn-sm btn-info" onclick="verDocumento('${documento.id}', '${documento.file}')">
-                                <i class="fas fa-eye"></i> Ver
-                            </button>
-                        </td>
-                    </tr>
-                `;
-                tablaBody.innerHTML += fila;
+        // Mapear documentos subidos por tipo
+        const docsPorTipo = {};
+        if (Array.isArray(documentos)) {
+            documentos.forEach(doc => {
+                const tipo = doc.document_type?.toLowerCase();
+                if (TIPOS_DOCUMENTOS_MULTIPLES[tipo]) {
+                    if (!docsPorTipo[tipo]) docsPorTipo[tipo] = [];
+                    docsPorTipo[tipo].push(doc);
+                } else {
+                    docsPorTipo[tipo] = doc;
+                }
             });
         }
-
+        // Mostrar todos los tipos requeridos
+        TIPOS_DOCUMENTOS_REQUERIDOS.forEach(tipo => {
+            let estado = '';
+            let fecha = '';
+            let acciones = '';
+            if (TIPOS_DOCUMENTOS_MULTIPLES[tipo]) {
+                const docs = docsPorTipo[tipo] || [];
+                const cantidadRequerida = TIPOS_DOCUMENTOS_MULTIPLES[tipo];
+                if (docs.length === cantidadRequerida) {
+                    estado = `<span class=\"status subida\">Subido (${docs.length}/${cantidadRequerida})</span>`;
+                    fecha = docs[0].uploaded_at ? new Date(docs[0].uploaded_at).toLocaleDateString() : '-';
+                    acciones = docs.map(doc => `<button class=\"btn btn-sm btn-info\" onclick=\"verDocumento('${doc.id}', '${doc.file}')\"><i class=\"fas fa-eye\"></i> Ver</button>`).join(' ');
+                } else {
+                    estado = `<span class=\"status pendiente\">Pendiente (${docs.length}/${cantidadRequerida})</span>`;
+                    fecha = docs.length > 0 && docs[0].uploaded_at ? new Date(docs[0].uploaded_at).toLocaleDateString() : '-';
+                    acciones = `<button class=\"btn btn-sm btn-primary\" onclick=\"abrirSubidaDocumento('${solicitudId}', '${tipo}', true, ${cantidadRequerida - docs.length})\"><i class=\"fas fa-upload\"></i> Subir</button>`;
+                }
+            } else {
+                const doc = docsPorTipo[tipo];
+                if (doc) {
+                    estado = `<span class=\"status subida\">Subido</span>`;
+                    fecha = doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleDateString() : '-';
+                    acciones = `<button class=\"btn btn-sm btn-info\" onclick=\"verDocumento('${doc.id}', '${doc.file}')\"><i class=\"fas fa-eye\"></i> Ver</button>`;
+                } else {
+                    estado = `<span class=\"status pendiente\">Pendiente</span>`;
+                    fecha = '-';
+                    acciones = `<button class=\"btn btn-sm btn-primary\" onclick=\"abrirSubidaDocumento('${solicitudId}', '${tipo}')\"><i class=\"fas fa-upload\"></i> Subir</button>`;
+                }
+            }
+            tablaBody.innerHTML += `
+                <tr>
+                    <td>${tipo.toUpperCase()}</td>
+                    <td>${estado}</td>
+                    <td>${fecha}</td>
+                    <td>${acciones}</td>
+                </tr>
+            `;
+        });
     } catch (error) {
         console.error('Error al cargar documentos:', error);
         tablaBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error al cargar los documentos.</td></tr>';
@@ -1881,18 +1893,16 @@ async function mostrarNotificacionesDashboard() {
     if (!notificacionesDiv) return;
     notificacionesDiv.innerHTML = '';
     try {
-        const response = await fetchAuthenticated(`${API_BASE_URL}applications/`);
-        if (!response.ok) throw new Error('No se pudieron cargar las solicitudes');
-        const solicitudes = await response.json();
+        const solicitudes = await fetchAuthenticated(`${API_BASE_URL}applications/`);
         let hayNotificaciones = false;
 
         // Solicitud aprobada
         const aprobada = solicitudes.find(s => s.status === 'aprobada');
         if (aprobada) {
             notificacionesDiv.innerHTML += `
-                <div style="padding: 15px; border-left: 4px solid #56ab2f; margin-bottom: 15px; background: #f4fff4;">
+                <div class="dashboard-notification aprobada">
                     <strong>Solicitud Aprobada</strong><br>
-                    Tu solicitud de crédito por S/ ${Number(aprobada.amount).toLocaleString()} ha sido aprobada. Tasa: 12.5% anual.
+                    <small>Tu solicitud de crédito por S/ ${Number(aprobada.amount).toLocaleString()} ha sido aprobada. Tasa: 12.5% anual.</small>
                 </div>
             `;
             hayNotificaciones = true;
@@ -1902,9 +1912,9 @@ async function mostrarNotificacionesDashboard() {
         const pendientesDocs = solicitudes.filter(s => s.status === 'pendiente' && s.documentos_faltantes && s.documentos_faltantes > 0);
         pendientesDocs.forEach(s => {
             notificacionesDiv.innerHTML += `
-                <div style="padding: 15px; border-left: 4px solid #ffa726; margin-bottom: 15px; background: #fffaf4;">
+                <div class="dashboard-notification pendiente">
                     <strong>Documentos Pendientes</strong><br>
-                    Faltan subir ${s.documentos_faltantes} documento(s) para completar tu solicitud #${s.id}.
+                    <small>Faltan subir ${s.documentos_faltantes} documento(s) para completar tu solicitud #${s.id}.</small>
                 </div>
             `;
             hayNotificaciones = true;
@@ -1914,9 +1924,9 @@ async function mostrarNotificacionesDashboard() {
         const rechazada = solicitudes.find(s => s.status === 'rechazada');
         if (rechazada) {
             notificacionesDiv.innerHTML += `
-                <div style="padding: 15px; border-left: 4px solid #ff6b6b; margin-bottom: 15px; background: #fff4f4;">
+                <div class="dashboard-notification rechazada">
                     <strong>Solicitud Rechazada</strong><br>
-                    Tu solicitud #${rechazada.id} ha sido rechazada. Revisa tus datos o comunícate con soporte.
+                    <small>Tu solicitud #${rechazada.id} ha sido rechazada. Revisa tus datos o comunícate con soporte.</small>
                 </div>
             `;
             hayNotificaciones = true;
@@ -1925,17 +1935,17 @@ async function mostrarNotificacionesDashboard() {
         // Si no hay notificaciones
         if (!hayNotificaciones) {
             notificacionesDiv.innerHTML = `
-                <div style="padding: 15px; border-left: 4px solid var(--primary-color); margin-bottom: 15px; background: rgba(102, 126, 234, 0.05);">
+                <div class="dashboard-notification info">
                     <strong>Sin notificaciones importantes</strong><br>
-                    No tienes notificaciones recientes.
+                    <small>No tienes notificaciones recientes.</small>
                 </div>
             `;
         }
     } catch (error) {
         notificacionesDiv.innerHTML = `
-            <div style="padding: 15px; border-left: 4px solid #ff6b6b; margin-bottom: 15px; background: #fff4f4;">
+            <div class="dashboard-notification rechazada">
                 <strong>Error al cargar notificaciones</strong><br>
-                ${error.message}
+                <small>${error.message}</small>
             </div>
         `;
     }
@@ -1954,7 +1964,7 @@ window.addEventListener('DOMContentLoaded', function() {
 async function cargarEstadisticasAdmin() {
     if (!currentUser || currentUser.role !== 'admin') return;
     try {
-        const data = await fetchAuthenticated('http://localhost:8000/api/auth/admin-stats/');
+        const data = await fetchAuthenticated('/api/auth/admin-stats/');
         if (document.querySelector('.stat-number')) {
             const statCards = document.querySelectorAll('.stat-card');
             if (statCards[0]) statCards[0].querySelector('.stat-number').textContent = data.total_usuarios;
@@ -1975,7 +1985,7 @@ async function cargarEstadisticasAdmin() {
 
 async function cargarActividadRecienteAdmin() {
     try {
-        const data = await fetchAuthenticated('http://localhost:8000/api/auth/admin-activity/');
+        const data = await fetchAuthenticated('/api/auth/admin-activity/');
 
         // Si la respuesta es un objeto, busca la propiedad relevante
         let actividad = data;
@@ -2003,7 +2013,7 @@ async function cargarActividadRecienteAdmin() {
 
 async function cargarEstadoSistemaAdmin() {
     try {
-        const data = await fetchAuthenticated('http://localhost:8000/api/auth/system-status/');
+        const data = await fetchAuthenticated('/api/auth/system-status/');
         // Actualizar los badges y valores
         const estados = [
             { id: 'estadoDB', valor: data.db },
@@ -2067,7 +2077,7 @@ if (window.location.pathname.includes('admin.html')) {
 async function registrarPoliticaActualizada(umbral) {
     try {
         const token = JSON.parse(localStorage.getItem('currentUser') || '{}').access_token;
-        await fetch('http://localhost:8000/api/auth/admin-activity/', {
+        await fetch('/api/auth/admin-activity/', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -2086,7 +2096,7 @@ async function registrarPoliticaActualizada(umbral) {
 async function registrarBackupCompletado() {
     try {
         const token = JSON.parse(localStorage.getItem('currentUser') || '{}').access_token;
-        await fetch('http://localhost:8000/api/auth/admin-activity/', {
+        await fetch('/api/auth/admin-activity/', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -2130,7 +2140,7 @@ async function cargarUsuariosAdmin() {
         if (statusFilter) params.append('status', statusFilter);
 
         // Hacer la petición con los filtros
-        const data = await fetchAuthenticated(`http://localhost:8000/api/auth/admin-users/?${params.toString()}`);
+        const data = await fetchAuthenticated(`/api/auth/admin-users/?${params.toString()}`);
         let users = data;
 
         // Si la respuesta es un objeto, busca la propiedad relevante
@@ -2174,7 +2184,7 @@ async function cargarUsuariosAdmin() {
 
 async function editarUsuario(id) {
     try {
-        const user = await fetchAuthenticated(`http://localhost:8000/api/auth/admin-users/${id}/`);
+        const user = await fetchAuthenticated(`/api/auth/admin-users/${id}/`);
         
         // Validar que el usuario tenga los datos necesarios
         if (!user || !user.id) {
@@ -2266,7 +2276,7 @@ async function guardarEdicionUsuario(userId) {
             is_active: isActive
         };
         
-        const response = await fetchAuthenticated(`http://localhost:8000/api/auth/admin-users/${userId}/`, {
+        const response = await fetchAuthenticated(`/api/auth/admin-users/${userId}/`, {
             method: 'PUT',
             body: JSON.stringify(data)
         });
@@ -2282,7 +2292,7 @@ async function guardarEdicionUsuario(userId) {
 
 async function cambiarRol(id) {
     try {
-        const user = await fetchAuthenticated(`http://localhost:8000/api/auth/admin-users/${id}/`);
+        const user = await fetchAuthenticated(`/api/auth/admin-users/${id}/`);
         
         if (!user || !user.id) {
             throw new Error('Datos de usuario inválidos');
@@ -2343,7 +2353,7 @@ async function confirmarCambioRol(userId) {
             return;
         }
         
-        const response = await fetchAuthenticated(`http://localhost:8000/api/auth/admin-users/${userId}/change-role/`, {
+        const response = await fetchAuthenticated(`/api/auth/admin-users/${userId}/change-role/`, {
             method: 'POST',
             body: JSON.stringify({ role: newRole })
         });
@@ -2364,7 +2374,7 @@ async function eliminarUsuario(id) {
     }
     
     try {
-        await fetchAuthenticated(`http://localhost:8000/api/auth/admin-users/${id}/`, {
+        await fetchAuthenticated(`/api/auth/admin-users/${id}/`, {
             method: 'DELETE'
         });
         
@@ -2378,7 +2388,7 @@ async function eliminarUsuario(id) {
 
 async function cambiarPermisos(id) {
     try {
-        const userData = await fetchAuthenticated(`http://localhost:8000/api/auth/admin-users/${id}/permissions/`);
+        const userData = await fetchAuthenticated(`/api/auth/admin-users/${id}/permissions/`);
         
         if (!userData || !userData.user_id) {
             throw new Error('Datos de permisos inválidos');
@@ -2441,7 +2451,7 @@ function mostrarModalPermisos(userData) {
 async function cargarPoliticas() {
     try {
         const token = JSON.parse(localStorage.getItem('currentUser') || '{}').access_token;
-        const response = await fetch('http://localhost:8000/api/applications/policy-config/', {
+        const response = await fetch('/api/applications/policy-config/', {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -2545,7 +2555,7 @@ async function guardarPoliticas() {
         };
         
         const token = JSON.parse(localStorage.getItem('currentUser') || '{}').access_token;
-        const response = await fetch('http://localhost:8000/api/applications/policy-config/', {
+        const response = await fetch('/api/applications/policy-config/', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -2587,7 +2597,7 @@ async function cargarAuditoria() {
         params.append('page', '1');
         params.append('page_size', '50');
         
-        const response = await fetch(`http://localhost:8000/api/auth/audit-logs/?${params}`, {
+        const response = await fetch(`/api/auth/audit-logs/?${params}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -2644,7 +2654,7 @@ function renderizarTablaAuditoria(logs) {
 async function verDetalleAudit(logId) {
     try {
         const token = JSON.parse(localStorage.getItem('currentUser') || '{}').access_token;
-        const response = await fetch(`http://localhost:8000/api/auth/audit-logs/${logId}/`, {
+        const response = await fetch(`/api/auth/audit-logs/${logId}/`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -2729,7 +2739,7 @@ async function exportarAuditoria() {
         if (tipoEvento) params.append('tipo_evento', tipoEvento);
         params.append('export', 'true');
         
-        const response = await fetch(`http://localhost:8000/api/auth/audit-logs/?${params}`, {
+        const response = await fetch(`/api/auth/audit-logs/?${params}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -2770,7 +2780,7 @@ async function cargarReportesAdmin() {
             return;
         }
         
-        const response = await fetch('http://localhost:8000/api/auth/admin-reports/', {
+        const response = await fetch('/api/auth/admin-reports/', {
             headers: {
                 'Authorization': `Bearer ${currentUser.access_token}`,
                 'Content-Type': 'application/json'
@@ -2785,7 +2795,7 @@ async function cargarReportesAdmin() {
             if (refreshSuccess) {
                 // Reintentar con el nuevo token
                 const newUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                const newResponse = await fetch('http://localhost:8000/api/auth/admin-reports/', {
+                const newResponse = await fetch('/api/auth/admin-reports/', {
                     headers: {
                         'Authorization': `Bearer ${newUser.access_token}`,
                         'Content-Type': 'application/json'
@@ -2893,7 +2903,7 @@ async function generarReporte(tipo) {
         const fechaInicio = document.getElementById('fechaInicioReporte')?.value || '';
         const fechaFin = document.getElementById('fechaFinReporte')?.value || '';
         
-        const response = await fetch('http://localhost:8000/api/auth/admin-reports/', {
+        const response = await fetch('/api/auth/admin-reports/', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -3021,7 +3031,7 @@ async function exportarReporte(tipo) {
         const fechaFin = document.getElementById('fechaFinReporte')?.value || '';
         
         // Generar el reporte desde el backend
-        const response = await fetch('http://localhost:8000/api/auth/admin-reports/', {
+        const response = await fetch('/api/auth/admin-reports/', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -3206,7 +3216,7 @@ async function verificarToken() {
     
     try {
         // Usar endpoint accesible a todos los roles
-        const response = await fetch('http://localhost:8000/api/applications/user-stats/', {
+        const response = await fetch('/api/applications/user-stats/', {
             headers: {
                 'Authorization': `Bearer ${currentUser.access_token}`,
                 'Content-Type': 'application/json'
@@ -3255,7 +3265,7 @@ async function cargarAlertas() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
         
-        const response = await fetch('http://localhost:8000/api/auth/alertas/', {
+        const response = await fetch('/api/auth/alertas/', {
             headers: {
                 'Authorization': `Bearer ${currentUser.access_token}`,
                 'Content-Type': 'application/json'
@@ -3420,7 +3430,7 @@ async function configurarAlertas() {
         }
         
         // Enviar configuración al backend
-        const response = await fetch('http://localhost:8000/api/auth/alertas/', {
+        const response = await fetch('/api/auth/alertas/', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${currentUser.access_token}`,
@@ -3597,7 +3607,7 @@ async function crearUsuario() {
         };
         
         // Crear usuario
-        const response = await fetchAuthenticated('http://localhost:8000/api/auth/admin-users/create/', {
+        const response = await fetchAuthenticated('/api/auth/admin-users/create/', {
             method: 'POST',
             body: JSON.stringify(formData)
         });
@@ -3676,3 +3686,132 @@ window.addEventListener('DOMContentLoaded', function() {
         }, 300);
     }
 });
+
+// --- SUBIDA DE FOTO DE PERFIL DESDE perfil.html ---
+async function subirFotoPerfil(file) {
+    if (!currentUser || !currentUser.access_token) {
+        showNotification('No has iniciado sesión', 'error');
+        return;
+    }
+    const formData = new FormData();
+    formData.append('avatar', file);
+    try {
+        const response = await fetch('/api/users/upload-avatar/', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${currentUser.access_token}`
+            },
+            body: formData
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            showNotification(errorData.detail || 'Error al subir la foto de perfil', 'error');
+            return;
+        }
+        const data = await response.json();
+        // data.avatar_url debe contener la nueva URL de la imagen
+        const avatar = document.getElementById('profileAvatar');
+        if (avatar && data.avatar_url) {
+            avatar.style.backgroundImage = `url('${data.avatar_url}')`;
+            avatar.style.backgroundSize = 'cover';
+            avatar.style.backgroundPosition = 'center';
+            document.getElementById('avatarInitials').style.display = 'none';
+        }
+        showNotification('Foto de perfil actualizada', 'success');
+    } catch (error) {
+        showNotification('Error de red al subir la foto', 'error');
+    }
+}
+
+// Delegación de eventos para asegurar que el avatar siempre abra el modal de perfil
+window.addEventListener('DOMContentLoaded', function() {
+    document.body.addEventListener('click', function(e) {
+        const avatar = e.target.closest('#userAvatar');
+        if (avatar) {
+            if (typeof abrirModalPerfil === 'function') {
+                abrirModalPerfil();
+            } else {
+                // fallback: mostrar el modal si existe
+                const modal = document.getElementById('perfilModal');
+                if (modal) modal.style.display = 'flex';
+            }
+        }
+    });
+    // Asegurar el cursor pointer
+    const userAvatar = document.getElementById('userAvatar');
+    if (userAvatar) userAvatar.style.cursor = 'pointer';
+});
+
+// Enganchar el event listener del avatar solo una vez y de forma segura
+window.addEventListener('DOMContentLoaded', function() {
+    const userAvatar = document.getElementById('userAvatar');
+    if (userAvatar && !userAvatar.dataset.listenerAttached) {
+        userAvatar.style.cursor = 'pointer';
+        userAvatar.addEventListener('click', function() {
+            abrirModalPerfil();
+        });
+        userAvatar.dataset.listenerAttached = 'true';
+    }
+});
+
+// Función para abrir el input de subida de un documento faltante
+function abrirSubidaDocumento(solicitudId, tipo, esMultiple = false, maxArchivos = null) {
+    // Crear input dinámico
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.jpg,.jpeg,.png';
+    input.style.display = 'none';
+    if (TIPOS_DOCUMENTOS_MULTIPLES[tipo] || esMultiple) input.multiple = true;
+    if (maxArchivos) input.setAttribute('max', maxArchivos);
+    document.body.appendChild(input);
+    input.addEventListener('change', async function(e) {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+        if (maxArchivos && files.length > maxArchivos) {
+            showNotification(`Solo puedes subir ${maxArchivos} archivo(s) para este documento.`, 'error');
+            document.body.removeChild(input);
+            return;
+        }
+        showLoading();
+        try {
+            for (let file of files) {
+                await subirDocumento(file, solicitudId, tipo);
+            }
+            showNotification('Documento subido exitosamente', 'success');
+            cargarDocumentosSolicitud(solicitudId);
+        } catch (error) {
+            showNotification(error.message || 'Error al subir el documento', 'error');
+        } finally {
+            hideLoading();
+            document.body.removeChild(input);
+        }
+    });
+    input.click();
+}
+
+// Modificar subirDocumento para aceptar tipo opcional
+async function subirDocumento(file, solicitudId, tipo = null) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('document_type', tipo ? tipo : file.name.split('.').pop().toLowerCase()); // Usar minúsculas
+    // NO agregar 'application' al FormData
+
+    const response = await fetchAuthenticated(`${API_BASE_URL}applications/${solicitudId}/documents/upload/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            // No incluir Content-Type para FormData
+        }
+    });
+
+    if (!response.ok) {
+        let errorMsg = 'Error al subir el documento';
+        try {
+            const errorData = await response.json();
+            errorMsg = errorData.detail || JSON.stringify(errorData) || errorMsg;
+        } catch (e) {}
+        throw new Error(errorMsg);
+    }
+
+    return await response.json();
+}

@@ -607,7 +607,7 @@
             const fechaHasta = document.getElementById('fechaHasta').value;
 
             // Construir la URL de la API con los parámetros de filtro y búsqueda
-            let apiUrl = 'http://localhost:8000/api/applications/?';
+            let apiUrl = '/api/applications/?';
             if (estadoFiltro) {
                 apiUrl += `status=${estadoFiltro}&`;
             }
@@ -682,7 +682,7 @@
         async function verDetalle(id) {
             showLoading();
             try {
-                const response = await fetchAuthenticated(`http://localhost:8000/api/applications/${id}/`, { method: 'GET' });
+                const response = await fetchAuthenticated(`/api/applications/${id}/`, { method: 'GET' });
                 
                 if (!response.ok) {
                     throw new Error('Error al obtener los detalles de la solicitud.');
@@ -779,7 +779,7 @@
             };
 
             try {
-                const response = await fetchAuthenticated(`http://localhost:8000/api/applications/${id}/`, {
+                const response = await fetchAuthenticated(`/api/applications/${id}/`, {
                     method: 'PATCH', // Usar PATCH para actualización parcial
                     body: JSON.stringify(updateData),
                     headers: {

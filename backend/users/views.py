@@ -1,7 +1,7 @@
 # CreditoSys/backend/users/views.py
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import UserRegisterSerializer, MyTokenObtainPairSerializer
 from django.contrib.auth import get_user_model
@@ -29,6 +29,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from .models import AlertaEnviada
 from .models import AlertasConfiguracion
+from rest_framework.parsers import MultiPartParser, FormParser
 
 User = get_user_model()
 
@@ -1321,3 +1322,16 @@ class AdminCreateUserView(APIView):
         else:
             ip = request.META.get('REMOTE_ADDR')
         return ip
+
+class UploadAvatarView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        user = request.user
+        avatar = request.FILES.get('avatar')
+        if not avatar:
+            return Response({'detail': 'No se envió archivo.'}, status=400)
+        user.avatar = avatar
+        user.save()
+        return Response({'avatar_url': request.build_absolute_uri(user.avatar.url)})

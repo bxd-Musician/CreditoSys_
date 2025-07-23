@@ -21,6 +21,7 @@ class User(AbstractUser):
     # Añadir campos adicionales si los necesitas (DNI, teléfono, etc.)
     dni = models.CharField(max_length=10, unique=True, null=True, blank=True)
     phone_number = models.CharField(max_length=15, null=True, blank=True)
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)  # Nuevo campo para foto de perfil
 
     objects = CustomUserManager()
 

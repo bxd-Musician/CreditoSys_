@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil - CreditoSys</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+    <style>
+        .profile-container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: rgba(255,255,255,0.97);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(102,126,234,0.10);
+            padding: 40px 30px 30px 30px;
+        }
+        .profile-avatar {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            color: white;
+            font-size: 3.5em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 18px auto;
+            cursor: pointer;
+            position: relative;
+            transition: box-shadow 0.2s;
+        }
+        .profile-avatar:hover {
+            box-shadow: 0 0 0 4px #b3b3ff44;
+        }
+        .profile-avatar .edit-icon {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: #fff;
+            color: var(--primary-color);
+            border-radius: 50%;
+            padding: 5px;
+            font-size: 1.1em;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .profile-info {
+            text-align: center;
+        }
+        .profile-info h2 {
+            margin-bottom: 4px;
+        }
+        .profile-info .role {
+            color: var(--primary-color);
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+        .profile-fields {
+            margin: 30px 0 20px 0;
+        }
+        .profile-fields .form-group {
+            margin-bottom: 18px;
+        }
+        .profile-fields label {
+            font-weight: 500;
+            color: #444;
+        }
+        .profile-fields input {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            font-size: 1em;
+            margin-top: 4px;
+        }
+        .profile-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .profile-actions .btn {
+            min-width: 140px;
+        }
+    </style>
+</head>
+<body style="background: rgba(0,0,0,0.3);">
+    <div class="modal active" id="perfilModal" style="display:flex;justify-content:center;align-items:center;">
+        <div class="modal-content" style="max-width:500px;width:95%;border-radius:12px;overflow:hidden;">
+            <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 10px 24px;">
+                <h3 style="margin:0;"><i class="fas fa-user"></i> Mi Perfil</h3>
+                <button class="modal-close" onclick="cerrarModalPerfil()" style="background:none;border:none;font-size:1.5em;cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" style="padding:24px;">
+                <form id="profileForm" autocomplete="off">
+                    <div class="profile-avatar" id="profileAvatar" title="Haz clic para cambiar tu foto" tabindex="0" style="outline: none;">
+                        <span id="avatarInitials">U</span>
+                        <input type="file" id="avatarInput" accept="image/*" style="position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;">
+                        <span class="edit-icon"><i class="fas fa-camera"></i></span>
+                    </div>
+                    <div class="profile-info">
+                        <h2 id="profileName">Usuario</h2>
+                        <div class="role" id="profileRole">Cliente</div>
+                    </div>
+                    <div class="profile-fields">
+                        <div class="form-group">
+                            <label for="profileEmail">Correo electrónico</label>
+                            <input type="email" id="profileEmail" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="profilePhone">Teléfono</label>
+                            <input type="text" id="profilePhone" name="phone">
+                        </div>
+                        <div class="form-group">
+                            <label for="profileDNI">DNI</label>
+                            <input type="text" id="profileDNI" name="dni" maxlength="8" readonly style="background:#f5f5f5;">
+                        </div>
+                        <div class="form-group">
+                            <label for="profileDate">Fecha de registro</label>
+                            <input type="text" id="profileDate" name="date_joined" readonly style="background:#f5f5f5;">
+                        </div>
+                    </div>
+                    <div class="profile-actions" style="margin-top:18px;">
+                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                        <button type="button" class="btn btn-secondary" onclick="cerrarModalPerfil()">Cerrar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+    <script>
+    // --- Lógica de perfil ---
+    document.addEventListener('DOMContentLoaded', function() {
+        cargarDatosPerfilSeguro();
+        const avatar = document.getElementById('profileAvatar');
+        const avatarInput = document.getElementById('avatarInput');
+        avatar.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                avatarInput.click();
+            }
+        });
+        avatarInput.addEventListener('change', function(e) {
+            if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    avatar.style.backgroundImage = `url('${ev.target.result}')`;
+                    avatar.style.backgroundSize = 'cover';
+                    avatar.style.backgroundPosition = 'center';
+                    document.getElementById('avatarInitials').style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+                subirFotoPerfil(file);
+            }
+        });
+        document.getElementById('profileForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await guardarPerfil();
+        });
+    });
+    function cerrarModalPerfil() {
+        document.getElementById('perfilModal').style.display = 'none';
+    }
+    // Cargar datos de perfil de forma segura y llenar estadísticas y tabla
+    async function cargarDatosPerfilSeguro() {
+        if (!window.currentUser) loadUserData();
+        const userData = window.currentUser || {};
+        document.getElementById('profileName').textContent = userData.username || 'Usuario';
+        document.getElementById('profileRole').textContent = (userData.role || 'Cliente').charAt(0).toUpperCase() + (userData.role || 'Cliente').slice(1);
+        document.getElementById('profileEmail').value = userData.email || '';
+        document.getElementById('profilePhone').value = userData.phone || userData.phone_number || '';
+        document.getElementById('profileDNI').value = userData.dni || '';
+        document.getElementById('profileDate').value = userData.date_joined ? new Date(userData.date_joined).toLocaleDateString() : 'No disponible';
+        // Avatar inicial
+        const avatarInitials = document.getElementById('avatarInitials');
+        if (avatarInitials && userData.username) {
+            avatarInitials.textContent = userData.username.charAt(0).toUpperCase();
+        }
+        // Mostrar avatar si existe
+        if (userData.avatar) {
+            const avatar = document.getElementById('profileAvatar');
+            avatar.style.backgroundImage = `url('${userData.avatar}')`;
+            avatar.style.backgroundSize = 'cover';
+            avatar.style.backgroundPosition = 'center';
+            document.getElementById('avatarInitials').style.display = 'none';
+        }
+        // Cargar estadísticas y solicitudes recientes
+        try {
+            const stats = await fetchAuthenticated('/api/applications/user-stats/');
+            document.getElementById('profileTotalSolicitudes').textContent = stats.total_applications || 0;
+            document.getElementById('profileSolicitudesAprobadas').textContent = stats.approved_applications || 0;
+            document.getElementById('profileSolicitudesPendientes').textContent = stats.recent_applications_30_days || 0;
+            document.getElementById('profileMontoTotal').textContent = `S/ ${(stats.total_amount_requested || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        } catch (e) {
+            // fallback
+        }
+        try {
+            const solicitudes = await fetchAuthenticated('/api/applications/');
+            const tbody = document.getElementById('profileRecentSolicitudesTableBody');
+            tbody.innerHTML = '';
+            if (Array.isArray(solicitudes) && solicitudes.length > 0) {
+                solicitudes.sort((a, b) => new Date(b.application_date) - new Date(a.application_date));
+                solicitudes.slice(0, 5).forEach(s => {
+                    const estadoClass = s.status === 'aprobada' ? 'status-aprobada' : s.status === 'pendiente' ? 'status-pendiente' : s.status === 'revision' ? 'status-revision' : 'status-rechazada';
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>#${s.id}</td>
+                            <td>${new Date(s.application_date).toLocaleDateString()}</td>
+                            <td>S/ ${Number(s.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                            <td><span class="badge ${estadoClass}">${s.status.charAt(0).toUpperCase() + s.status.slice(1)}</span></td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center">No tienes solicitudes recientes.</td></tr>';
+            }
+        } catch (e) {}
+    }
+    // Cambiar contraseña (puedes implementar modal o redirección)
+    function cambiarContrasena() {
+        showNotification('Funcionalidad en desarrollo', 'info');
+    }
+    </script>
+</body>
+</html> 

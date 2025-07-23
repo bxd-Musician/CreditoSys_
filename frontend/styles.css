@@ -1164,3 +1164,39 @@ body {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
+
+/* ==========================================================================
+   NOTIFICACIONES DASHBOARD PERSONALIZADAS
+   ========================================================================== */
+.dashboard-notification {
+    padding: 15px 20px;
+    border-left: 4px solid var(--primary-color);
+    margin-bottom: 15px;
+    background: rgba(102, 126, 234, 0.05);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.04);
+}
+.dashboard-notification.aprobada {
+    border-left-color: var(--success-color);
+    background: #f4fff4;
+}
+.dashboard-notification.pendiente {
+    border-left-color: var(--warning-color);
+    background: #fffaf4;
+}
+.dashboard-notification.rechazada {
+    border-left-color: var(--error-color);
+    background: #fff4f4;
+}
+.dashboard-notification.info {
+    border-left-color: var(--primary-color);
+    background: rgba(102, 126, 234, 0.05);
+}
+.dashboard-notification strong {
+    font-size: 1.08em;
+    display: block;
+    margin-bottom: 3px;
+}
+.dashboard-notification small {
+    color: #444;
+}

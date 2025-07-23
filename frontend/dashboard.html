@@ -34,7 +34,7 @@
                     <br>
                     <small id="userRole">Usuario</small>
                 </div>
-                <div class="user-avatar" id="userAvatar">U</div>
+                <div class="user-avatar" id="userAvatar" style="cursor:pointer;">U</div>
                 <button class="btn btn-secondary" onclick="logout()">
                     <i class="fas fa-sign-out-alt"></i> Salir
                 </button>
@@ -75,6 +75,16 @@
                 <div class="card-body text-center" style="background: var(--primary-gradient); color: white; border-radius: var(--border-radius-lg);">
                     <h2>¡Bienvenido al Sistema!</h2>
                     <p>Has iniciado sesión exitosamente en CreditoSys</p>
+                </div>
+            </div>
+
+            <!-- Notificaciones Recientes -->
+            <div class="card mb-3">
+                <div class="card-header" style="background: linear-gradient(90deg, #7579ff 0%, #b224ef 100%); color: white;">
+                    <h3><i class="fas fa-bell"></i> Notificaciones Recientes</h3>
+                </div>
+                <div class="card-body" id="notificaciones">
+                    <!-- Aquí se insertarán las notificaciones dinámicamente -->
                 </div>
             </div>
 
@@ -205,25 +215,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Recent Notifications -->
-            <div class="card">
-                <div class="card-header">
-                    <h3><i class="fas fa-bell"></i> Notificaciones Recientes</h3>
-                </div>
-                <div class="card-body">
-                    <div id="notificaciones">
-                        <div style="padding: 15px; border-left: 4px solid var(--primary-color); margin-bottom: 15px; background: rgba(102, 126, 234, 0.05);">
-                            <strong>Solicitud Aprobada</strong><br>
-                            <small>Tu solicitud de crédito por S/ 15,000 ha sido aprobada. Tasa: 12.5% anual.</small>
-                        </div>
-                        <div style="padding: 15px; border-left: 4px solid var(--warning-color); margin-bottom: 15px; background: rgba(255, 167, 38, 0.05);">
-                            <strong>Documentos Pendientes</strong><br>
-                            <small>Faltan subir 2 documentos para completar tu solicitud #002.</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </section>
 
         <!-- Documentos Section (Solo esta sección queda aquí) -->
@@ -236,9 +227,7 @@
                     <div class="form-group">
                         <label class="form-label">Solicitud</label>
                         <select class="form-select" id="solicitudDocumentos">
-                            <option value="001">Solicitud #001 - S/ 15,000</option>
-                            <option value="002">Solicitud #002 - S/ 25,000</option>
-                            <option value="003">Solicitud #003 - S/ 5,000</option>
+                            <!-- Opciones se llenarán dinámicamente -->
                         </select>
                     </div>
 
@@ -260,37 +249,8 @@
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td>DNI</td>
-                                    <td><span class="badge status-aprobada">Validado</span></td>
-                                    <td>15/05/2025</td>
-                                    <td>
-                                        <button class="btn btn-primary btn-sm">
-                                            <i class="fas fa-eye"></i> Ver
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Recibo de Sueldo</td>
-                                    <td><span class="badge status-pendiente">Pendiente</span></td>
-                                    <td>-</td>
-                                    <td>
-                                        <button class="btn btn-secondary btn-sm" disabled>
-                                            <i class="fas fa-upload"></i> Subir
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Historial Crediticio</td>
-                                    <td><span class="badge status-revision">En Revisión</span></td>
-                                    <td>18/05/2025</td>
-                                    <td>
-                                        <button class="btn btn-primary btn-sm">
-                                            <i class="fas fa-eye"></i> Ver
-                                        </button>
-                                    </td>
-                                </tr>
+                            <tbody id="documentosTableBody">
+                                <!-- Se llenará dinámicamente -->
                             </tbody>
                         </table>
                     </div>
@@ -349,6 +309,50 @@
         -->
     </div>
 
+    <!-- Agregar el modal de perfil al final del body -->
+    <div class="modal" id="perfilModal" style="display:none;justify-content:center;align-items:center;">
+        <div class="modal-content" style="max-width:500px;width:95%;border-radius:12px;overflow:hidden;">
+            <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 10px 24px;">
+                <h3 style="margin:0;"><i class="fas fa-user"></i> Mi Perfil</h3>
+                <button class="modal-close" onclick="cerrarModalPerfil()" style="background:none;border:none;font-size:1.5em;cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" style="padding:24px;">
+                <form id="profileForm" autocomplete="off">
+                    <div class="profile-avatar" id="profileAvatar" title="Haz clic para cambiar tu foto" tabindex="0" style="outline: none;">
+                        <span id="avatarInitials">U</span>
+                        <input type="file" id="avatarInput" accept="image/*" style="position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;">
+                        <span class="edit-icon"><i class="fas fa-camera"></i></span>
+                    </div>
+                    <div class="profile-info">
+                        <h2 id="profileName">Usuario</h2>
+                        <div class="role" id="profileRole">Cliente</div>
+                    </div>
+                    <div class="profile-fields">
+                        <div class="form-group">
+                            <label for="profileEmail">Correo electrónico</label>
+                            <input type="email" id="profileEmail" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="profilePhone">Teléfono</label>
+                            <input type="text" id="profilePhone" name="phone">
+                        </div>
+                        <div class="form-group">
+                            <label for="profileDNI">DNI</label>
+                            <input type="text" id="profileDNI" name="dni" maxlength="8" readonly style="background:#f5f5f5;">
+                        </div>
+                        <div class="form-group">
+                            <label for="profileDate">Fecha de registro</label>
+                            <input type="text" id="profileDate" name="date_joined" readonly style="background:#f5f5f5;">
+                        </div>
+                    </div>
+                    <div class="profile-actions" style="margin-top:18px;">
+                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                        <button type="button" class="btn btn-secondary" onclick="cerrarModalPerfil()">Cerrar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     <script src="script.js"></script>
     <script>
         // FUNCIONES DE NAVEGACIÓN ACTUALIZADAS
@@ -485,19 +489,61 @@
             updateRoleBasedUI();
         }
 
+        function abrirModalPerfil() {
+            document.getElementById('perfilModal').style.display = 'flex';
+            cargarDatosPerfilSeguro();
+        }
+
+        function cerrarModalPerfil() {
+            document.getElementById('perfilModal').style.display = 'none';
+            updateUserInterface();
+        }
+
+        async function cargarDatosPerfilSeguro() {
+            let userData = window.currentUser;
+            if (!userData) {
+                try {
+                    const userStr = localStorage.getItem('currentUser');
+                    if (userStr) userData = JSON.parse(userStr);
+                } catch (e) { userData = {}; }
+            }
+            userData = userData || {};
+            document.getElementById('profileName').textContent = userData.username || 'Usuario';
+            document.getElementById('profileRole').textContent = (userData.role || 'Cliente').charAt(0).toUpperCase() + (userData.role || 'Cliente').slice(1);
+            document.getElementById('profileEmail').value = userData.email || '';
+            document.getElementById('profilePhone').value = userData.phone || userData.phone_number || '';
+            document.getElementById('profileDNI').value = userData.dni || '';
+            document.getElementById('profileDate').value = userData.date_joined ? new Date(userData.date_joined).toLocaleDateString() : 'No disponible';
+            const avatarInitials = document.getElementById('avatarInitials');
+            if (avatarInitials && userData.username) {
+                avatarInitials.textContent = userData.username.charAt(0).toUpperCase();
+            }
+            if (userData.avatar) {
+                const avatar = document.getElementById('profileAvatar');
+                avatar.style.backgroundImage = `url('${userData.avatar}')`;
+                avatar.style.backgroundSize = 'cover';
+                avatar.style.backgroundPosition = 'center';
+                document.getElementById('avatarInitials').style.display = 'none';
+            }
+        }
+
         // Inicializar cuando se carga la página
         window.addEventListener('load', function() {
-            // Cargar datos del usuario
             loadUserData();
-            
-            // Activar la pestaña de dashboard por defecto
             const dashboardTab = document.querySelector('[onclick="irADashboard()"]');
             if (dashboardTab) {
                 dashboardTab.classList.add('active');
             }
-            
-            // Actualizar interfaz según el rol
             updateUserInterface();
+            // Enganchar el event listener del avatar solo una vez
+            const userAvatar = document.getElementById('userAvatar');
+            if (userAvatar && !userAvatar.dataset.listenerAttached) {
+                userAvatar.style.cursor = 'pointer';
+                userAvatar.addEventListener('click', function() {
+                    abrirModalPerfil();
+                });
+                userAvatar.dataset.listenerAttached = 'true';
+            }
         });
     </script>
 </body>
