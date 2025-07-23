@@ -472,21 +472,32 @@
 
         // ACTUALIZAR LA FUNCIÓN updateUserInterface para incluir roles
         function updateUserInterface() {
-            if (!currentUser) return;
-            
+            if (!currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
             const userName = document.getElementById('userName');
             const userRole = document.getElementById('userRole');
             const userAvatar = document.getElementById('userAvatar');
-            
-            if (userName) userName.textContent = currentUser.name;
+            // Permitir ambos: username/role y name/type
+            const name = currentUser.name || currentUser.username;
+            const role = currentUser.type || currentUser.role;
+            if (userName) userName.textContent = name || 'Usuario';
             if (userRole) {
-                userRole.textContent = currentUser.type.charAt(0).toUpperCase() + currentUser.type.slice(1);
+                if (role && typeof role === 'string') {
+                    userRole.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+                } else {
+                    userRole.textContent = 'Usuario';
+                }
             }
             if (userAvatar) {
-                const initials = currentUser.name.split(' ').map(n => n[0]).join('').substring(0, 2);
-                userAvatar.textContent = initials;
+                if (name && typeof name === 'string') {
+                    const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    userAvatar.textContent = initials;
+                } else {
+                    userAvatar.textContent = 'U';
+                }
             }
-            
             // IMPORTANTE: Llamar a la función para mostrar elementos según el rol
             updateRoleBasedUI();
         }

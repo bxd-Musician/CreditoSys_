@@ -3,6 +3,8 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password # Para validar la fortaleza de la contraseña
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from users.models import AdminLog
+from users.models import AuditLog # Added for AuditLogSerializer
 
 User = get_user_model()
 
@@ -25,6 +27,12 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         # Asignar rol por defecto si no se proporciona (ej. 'cliente' para registros públicos)
         role = validated_data.pop('role', 'cliente')
         user = User.objects.create_user(role=role, **validated_data)
+        # Registrar evento en AdminLog
+        AdminLog.objects.create(
+            tipo='usuario_creado',
+            titulo='Usuario Creado',
+            detalle=f"{user.username} - {user.role}"
+        )
         return user
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -39,3 +47,23 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Puedes añadir más campos aquí, pero no datos sensibles
 
         return token
+
+class AuditLogSerializer(serializers.ModelSerializer):
+    usuario_email = serializers.CharField(source='usuario.email', read_only=True)
+    usuario_nombre = serializers.CharField(source='usuario.username', read_only=True)
+    tipo_accion_display = serializers.CharField(source='get_tipo_accion_display', read_only=True)
+    estado_display = serializers.CharField(source='get_estado_display', read_only=True)
+    timestamp_formatted = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = AuditLog
+        fields = [
+            'id', 'timestamp', 'timestamp_formatted', 'tipo_accion', 'tipo_accion_display',
+            'descripcion', 'usuario_email', 'usuario_nombre', 'recurso', 'ip_address',
+            'estado', 'estado_display', 'detalles', 'duracion_ms', 'metodo_http'
+        ]
+        read_only_fields = ['timestamp', 'usuario', 'ip_address', 'user_agent']
+    
+    def get_timestamp_formatted(self, obj):
+        """Formatear timestamp para mostrar en español"""
+        return obj.timestamp.strftime('%d/%m/%Y %H:%M:%S')

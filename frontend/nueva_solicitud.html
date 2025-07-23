@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CreditoSys - Nueva Solicitud</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Cargar Tailwind CSS -->
     <link href="https://cdn.tailwindcss.com" rel="stylesheet">
@@ -516,7 +517,7 @@
             <div class="card-header">
                 <h2><i class="fas fa-plus-circle"></i> Nueva Solicitud de Crédito</h2>
                 <div class="d-flex gap-1">
-                    <button class="btn btn-outline btn-sm" onclick="guardarBorrador()">
+                    <button class="btn btn-warning btn-sm" onclick="guardarBorrador()">
                         <i class="fas fa-save"></i> Guardar Borrador
                     </button>
                     <button class="btn btn-secondary btn-sm" onclick="limpiarFormulario()">
@@ -525,7 +526,7 @@
                 </div>
             </div>
             <div class="card-body">
-                <form id="formNuevaSolicitud" onsubmit="procesarSolicitud(event)">
+                <form id="formNuevaSolicitud" onsubmit="procesarSolicitud(event)" novalidate>
                     
                     <!-- Paso 1: Datos Personales -->
                     <div id="paso1" class="form-step active">
@@ -534,45 +535,45 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Nombres Completos</label>
-                                <input type="text" class="form-input" id="nombres" required>
+                                <input type="text" class="form-input" id="nombres" name="nombres" required>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Apellidos Completos</label>
-                                <input type="text" class="form-input" id="apellidos" required>
+                                <input type="text" class="form-input" id="apellidos" name="apellidos" required>
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">DNI</label>
-                                <input type="text" class="form-input" id="dni" pattern="[0-9]{8}" maxlength="8" required>
+                                <input type="text" class="form-input" id="dni" name="dni" pattern="[0-9]{8}" maxlength="8" required placeholder="12345678">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Fecha de Nacimiento</label>
-                                <input type="date" class="form-input" id="fechaNacimiento" required>
+                                <input type="date" class="form-input" id="fechaNacimiento" name="fechaNacimiento" required>
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Teléfono</label>
-                                <input type="tel" class="form-input" id="telefono" pattern="[0-9]{9}" maxlength="9" required>
+                                <input type="tel" class="form-input" id="telefono" name="telefono" pattern="[0-9]{9}" maxlength="9" required>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Email</label>
-                                <input type="email" class="form-input" id="email" required>
+                                <input type="email" class="form-input" id="email" name="email" required>
                             </div>
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Dirección Completa</label>
-                            <textarea class="form-input" id="direccion" rows="3" required></textarea>
+                            <textarea class="form-input" id="direccion" name="direccion" rows="3" required></textarea>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Estado Civil</label>
-                                <select class="form-select" id="estadoCivil" required>
+                                <select class="form-select" id="estadoCivil" name="estadoCivil" required>
                                     <option value="">Seleccionar</option>
                                     <option value="soltero">Soltero(a)</option>
                                     <option value="casado">Casado(a)</option>
@@ -594,12 +595,12 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Monto Solicitado (S/)</label>
-                                <input type="number" class="form-input" id="montoSolicitado" min="1000" max="1000000" required>
+                                <input type="number" class="form-input" id="montoSolicitado" name="montoSolicitado" min="1000" max="1000000" required>
                                 <small>Monto mínimo: S/ 1,000 - Máximo: S/ 1,000,000</small>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Plazo (meses)</label>
-                                <select class="form-select" id="plazoMeses" required>
+                                <select class="form-select" id="plazoMeses" name="plazoMeses" required>
                                     <option value="">Seleccionar plazo</option>
                                     <option value="6">6 meses</option>
                                     <option value="12">12 meses</option>
@@ -616,7 +617,7 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Propósito del Crédito</label>
-                                <select class="form-select" id="proposito" required>
+                                <select class="form-select" id="proposito" name="proposito" required>
                                     <option value="">Seleccionar propósito</option>
                                     <option value="vivienda">Vivienda</option>
                                     <option value="vehiculo">Vehículo</option>
@@ -630,14 +631,14 @@
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Ingresos Mensuales (S/)</label>
-                                <input type="number" class="form-input" id="ingresosMensuales" min="0" required>
+                                <input type="number" class="form-input" id="ingresosMensuales" name="ingresosMensuales" min="0" required>
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Tipo de Trabajo</label>
-                                <select class="form-select" id="tipoTrabajo" required>
+                                <select class="form-select" id="tipoTrabajo" name="tipoTrabajo" required>
                                     <option value="">Seleccionar</option>
                                     <option value="dependiente">Empleado dependiente</option>
                                     <option value="independiente">Trabajador independiente</option>
@@ -648,7 +649,7 @@
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Empresa/Empleador</label>
-                                <input type="text" class="form-input" id="empresa" required>
+                                <input type="text" class="form-input" id="empresa" name="empresa" required>
                             </div>
                         </div>
 
@@ -691,18 +692,18 @@
                                 <div class="card mb-2">
                                     <div class="card-body">
                                         <h5><i class="fas fa-id-card"></i> DNI</h5>
-                                        <p>Documento Nacional de Identidad (ambas caras)</p>
+                                        <p>Documento Nacional de Identidad (ambas caras - anverso y reverso)</p>
                                         <div class="file-upload" onclick="document.getElementById('fileInputDNI').click()">
                                             <i class="fas fa-upload"></i>
                                             <p>Subir DNI</p>
-                                            <input type="file" id="fileInputDNI" accept=".pdf,.jpg,.jpeg,.png" style="display: none;" onchange="handleFileUpload(this, 'dni')">
+                                            <input type="file" id="fileInputDNI" accept=".pdf,.jpg,.jpeg,.png" multiple style="display: none;" onchange="handleFileUpload(this, 'dni')">
                                         </div>
                                         <div id="statusDNI" class="mt-2"></div>
                                     </div>
                                 </div>
 
                                 <!-- Recibo de Sueldo -->
-                                <div class="card mb-2">
+                                <div class="card mb-2"> 
                                     <div class="card-body">
                                         <h5><i class="fas fa-receipt"></i> Recibo de Sueldo</h5>
                                         <p>Últimos 3 recibos de sueldo</p>
@@ -801,13 +802,13 @@
                         <div class="card mt-3" style="background: rgba(40, 167, 69, 0.1); border: 2px solid rgba(40, 167, 69, 0.3);">
                             <div class="card-body">
                                 <div class="checkbox-group">
-                                    <input type="checkbox" class="checkbox" id="aceptoTerminos" required>
+                                    <input type="checkbox" class="checkbox" id="aceptoTerminos" name="aceptoTerminos" required>
                                     <label class="checkbox-label" for="aceptoTerminos">
                                         Acepto los <a href="#" onclick="mostrarTerminos()">términos y condiciones</a> del servicio y autorizo el procesamiento de mis datos personales
                                     </label>
                                 </div>
                                 <div class="checkbox-group">
-                                    <input type="checkbox" class="checkbox" id="aceptoEvaluacion" required>
+                                    <input type="checkbox" class="checkbox" id="aceptoEvaluacion" name="aceptoEvaluacion" required>
                                     <label class="checkbox-label" for="aceptoEvaluacion">
                                         Autorizo la evaluación de mi información crediticia en las centrales de riesgo
                                     </label>
@@ -834,8 +835,7 @@
         </div>
     </div>
 
-    <!-- Referencia al script global (asegúrate de que este archivo esté en la misma carpeta o la ruta correcta) -->
-    <script src="script.js"></script> 
+    <!-- Referencia al script global (asegúrate de que este archivo esté en la misma carpeta o la ruta correcta) --> 
     <script>
         // Variables para el formulario multi-paso
         let pasoActual = 1;
@@ -905,7 +905,8 @@
                     const camposPersonales = ['nombres', 'apellidos', 'dni', 'fechaNacimiento', 'telefono', 'email', 'direccion', 'estadoCivil'];
                     camposPersonales.forEach(campoId => {
                         const input = document.getElementById(campoId);
-                        if (!input.value.trim() || (input.type === 'email' && !input.checkValidity())) {
+                        if (!input.value.trim() || (input.type === 'email' && !input.checkValidity()) || 
+                            (campoId === 'dni' && !/^[0-9]{8}$/.test(input.value.trim()))) {
                             camposInvalidos.push(input);
                             valido = false;
                         }
@@ -988,6 +989,27 @@
         function actualizarEstadoArchivo(tipo, cantidad) {
             const statusElement = document.getElementById(`status${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
             if (statusElement) {
+                if (tipo === 'dni') {
+                    if (cantidad === 2) {
+                        statusElement.innerHTML = `
+                            <div class="badge status-aprobada">
+                                <i class="fas fa-check"></i> 2 archivo(s) subido(s)
+                            </div>
+                        `;
+                    } else if (cantidad === 1) {
+                        statusElement.innerHTML = `
+                            <div class="badge status-pendiente">
+                                <i class="fas fa-exclamation-triangle"></i> Pendiente 1 archivo
+                            </div>
+                        `;
+                    } else {
+                        statusElement.innerHTML = `
+                            <div class="badge status-pendiente">
+                                <i class="fas fa-exclamation-triangle"></i> Pendiente 2 archivos
+                            </div>
+                        `;
+                    }
+                } else {
                 if (cantidad > 0) {
                     statusElement.innerHTML = `
                         <div class="badge status-aprobada">
@@ -1000,6 +1022,7 @@
                             <i class="fas fa-exclamation-triangle"></i> Pendiente
                         </div>
                     `;
+                    }
                 }
             }
         }
@@ -1079,7 +1102,16 @@
                 }
             }
 
-            showLoadingScreen(); // Muestra la pantalla de carga
+            // Validación adicional del DNI
+            const dniInput = document.getElementById('dni');
+            if (!dniInput.value.trim() || !/^[0-9]{8}$/.test(dniInput.value.trim())) {
+                showNotification('El DNI debe tener exactamente 8 dígitos numéricos.', 'error');
+                mostrarPaso(1);
+                dniInput.focus();
+                return;
+            }
+
+            showLoading(); // Muestra la pantalla de carga
 
             // Recopilar datos de los pasos 1 y 2
             const personalData = {
@@ -1106,18 +1138,14 @@
             let applicationId = null;
 
             try {
-                // PASO 1: Crear la Solicitud de Crédito en el Backend
-                // Asumimos que el backend asocia la solicitud al usuario a través del token JWT.
-                // Aquí se envían los datos del crédito y los datos personales se usarán para el perfil de usuario asociado.
+                
                 const applicationPayload = {
                     ...creditData,
-                    // Si tu API de 'applications' espera los datos personales directamente en el payload
-                    // junto con los de la solicitud, descomenta y ajusta esto:
-                    // user_details: personalData // Esto dependerá de cómo esté diseñada tu API de Django
                 };
 
                 const responseApplication = await fetchAuthenticated('http://localhost:8000/api/applications/', {
                     method: 'POST',
+                    //headers:   {},
                     body: JSON.stringify(applicationPayload)
                 });
 
@@ -1164,7 +1192,7 @@
                     showNotification(`Solicitud #${applicationId} creada, pero error al finalizar: ${error.message}`, 'error');
                 }
             } finally {
-                hideLoadingScreen(); // Oculta la pantalla de carga
+                hideLoading(); // Oculta la pantalla de carga
             }
         }
 
@@ -1193,11 +1221,9 @@
                         formData.append('file', file); // El archivo en sí
 
                         try {
-                            // Usar fetchAuthenticated para incluir el token JWT
                             const response = await fetchAuthenticated(`http://localhost:8000/api/applications/${applicationId}/documents/upload/`, {
                                 method: 'POST',
                                 body: formData, // fetch configura Content-Type: multipart/form-data automáticamente
-                                headers: {} // ¡IMPORTANTE! No especificar Content-Type aquí para FormData
                             });
 
                             if (!response.ok) {
@@ -1218,8 +1244,6 @@
             }
             return allDocumentsUploaded; // Devuelve true solo si todos los documentos se subieron exitosamente
         }
-
-        // --- Otras funciones existentes de tu nueva_solicitud.html ---
 
         function calcularCuotaEstimada() {
             const monto = document.getElementById('montoSolicitado').value;
@@ -1370,16 +1394,12 @@
                 }
             }
 
-             // Check page access after loading user data
             if (typeof checkPageAccess === 'function') {
                 checkPageAccess();
             }
         });
 
-        // Asegurarse de que el botón de logout usa la función global de script.js
-        // La función `logout` en esta página no es necesaria si ya está en `script.js`
-        // y se incluye globalmente. Removí la implementación local de logout para evitar duplicados.
-        // Asumiendo que el botón ya tiene onclick="logout()" que llamará a la global.
     </script>
+    <script src="script.js"></script>
 </body>
 </html>

@@ -831,3 +831,336 @@ body {
         padding: 10px 20px;
     }
 }
+
+/* ============================================================================
+   PERFIL DE USUARIO
+   ============================================================================ */
+.profile-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    font-weight: bold;
+    margin: 0 auto 20px;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: var(--shadow-lg);
+}
+
+.profile-avatar:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-xl);
+}
+
+.profile-info h5 {
+    color: var(--dark-gray);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.profile-info .form-input[readonly] {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+.profile-info .form-input[readonly]:focus {
+    border-color: var(--border-color);
+    box-shadow: none;
+}
+
+.profile-stats {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: var(--border-radius-lg);
+    margin-top: 20px;
+}
+
+.profile-stats h4 {
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.profile-stats .row {
+    margin: 0;
+}
+
+.profile-stats .col-md-3 {
+    text-align: center;
+    padding: 10px;
+}
+
+.profile-stats .stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.profile-stats .stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* ============================================================================
+   INPUT GROUP PARA MODALES
+   ============================================================================ */
+.input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.input-group .form-input {
+    flex: 1;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.input-group .btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: none;
+    background: var(--light-gray);
+    color: var(--dark-gray);
+}
+
+.input-group .btn:hover {
+    background: var(--border-color);
+}
+
+.password-strength {
+    margin-top: 5px;
+    font-size: 0.8rem;
+}
+
+.password-strength.weak {
+    color: #dc3545;
+}
+
+.password-strength.medium {
+    color: #ffc107;
+}
+
+.password-strength.strong {
+    color: #28a745;
+}
+
+/* ============================================================================
+   ESTILOS ESPECÍFICOS PARA PÁGINA DE PERFIL
+   ============================================================================ */
+.status-distribution {
+    margin-top: 15px;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: var(--border-radius);
+}
+
+.status-label {
+    flex: 1;
+    font-weight: 500;
+    text-transform: capitalize;
+    color: var(--dark-gray);
+}
+
+.status-bar {
+    flex: 2;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    margin: 0 15px;
+    overflow: hidden;
+}
+
+.status-progress {
+    height: 100%;
+    background: var(--primary-gradient);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.status-count {
+    min-width: 30px;
+    text-align: center;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 8px;
+    background: #f8f9fa;
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--primary-color);
+}
+
+.activity-item i {
+    margin-right: 10px;
+    font-size: 1.1rem;
+}
+
+.activity-item:last-child {
+    margin-bottom: 0;
+}
+
+/* Responsive para página de perfil */
+@media (max-width: 768px) {
+    .profile-info .row {
+        margin: 0;
+    }
+    
+    .profile-info .col-md-6 {
+        flex: 0 0 100%;
+        margin-bottom: 15px;
+    }
+    
+    .status-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .status-bar {
+        width: 100%;
+        margin: 0;
+    }
+}
+
+/* Más separación entre los campos del perfil */
+.profile-info .row {
+    gap: 30px;
+    margin-bottom: 10px;
+}
+
+.profile-info .form-group {
+    margin-bottom: 28px;
+}
+
+.profile-info .mt-4 {
+    margin-top: 36px !important;
+    gap: 20px;
+    display: flex;
+}
+
+/* Más separación debajo del avatar y nombre */
+.profile-avatar {
+    margin-bottom: 32px;
+}
+
+.text-center.mb-4 > h4,
+.text-center.mb-4 > p,
+.text-center.mb-4 > button {
+    margin-bottom: 18px;
+}
+
+.card-body > .row {
+    gap: 60px;
+}
+
+@media (max-width: 900px) {
+    .card-body > .row {
+        gap: 30px;
+    }
+}
+
+/* Estilos para modales */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 0;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.close {
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    opacity: 0.7;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #ddd;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.modal .form-group {
+    margin-bottom: 15px;
+}
+
+.modal label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #333;
+}
+
+.modal input,
+.modal select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.modal input:focus,
+.modal select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}

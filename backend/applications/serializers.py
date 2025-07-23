@@ -2,6 +2,7 @@
 from rest_framework import serializers
 from .models import Application, ApplicationDocument
 from django.contrib.auth import get_user_model
+from .models import PolicyConfig
 
 User = get_user_model()
 
@@ -11,7 +12,7 @@ class ApplicationDocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ApplicationDocument
-        fields = ['id', 'document_type', 'file', 'uploaded_at']
+        fields = ['id', 'document_type', 'file', 'uploaded_at', 'status']
         read_only_fields = ['uploaded_at']
 
 class ApplicationSerializer(serializers.ModelSerializer):
@@ -39,3 +40,21 @@ class ApplicationUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Application
         fields = ['status', 'credit_score', 'evaluator_comments']
+
+class PolicyConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PolicyConfig
+        fields = '__all__'
+        read_only_fields = ('creado_por', 'fecha_creacion', 'fecha_actualizacion')
+    
+    def create(self, validated_data):
+        # Asignar el usuario que crea la política
+        validated_data['creado_por'] = self.context['request'].user
+        return super().create(validated_data)
+    
+    def update(self, instance, validated_data):
+        # Desactivar políticas anteriores
+        PolicyConfig.objects.filter(activo=True).update(activo=False)
+        # Marcar la nueva como activa
+        validated_data['activo'] = True
+        return super().update(instance, validated_data)

@@ -5,3 +5,5 @@ djangorestframework-simplejwt==5.5.0
 django-cors-headers==4.7.0
 pillow==11.2.1
 django-filter==25.1
+psutil==7.0.0
+requests==2.31.0

@@ -12,6 +12,12 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from datetime import timedelta
 from pathlib import Path
+from django.http import HttpResponse
+from django.urls import path, include
+from django.contrib import admin
+
+def home_view(request):
+    return HttpResponse("¡CreditoSys API está funcionando!".encode("utf-8"))
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,9 +30,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-1^6qeml=lhvggk8s+h6yb9lnso0+$sulk(oz8!eo794_()0s#^'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False  # Cambiar a False para emails reales
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -178,9 +184,42 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8001", # Si tu frontend se ejecuta en un servidor web local en este puerto
     "http://127.0.0.1:8001", # Otra posible IP local
+    "http://localhost:8000", # Backend local
+    "http://127.0.0.1:8000", # Backend local
+    "http://localhost:3000", # Puerto común para desarrollo
+    "http://127.0.0.1:3000", # Puerto común para desarrollo
+    "http://localhost:5000", # Puerto común para desarrollo
+    "http://127.0.0.1:5000", # Puerto común para desarrollo
+    "http://localhost:8080", # Puerto común para desarrollo
+    "http://127.0.0.1:8080", # Puerto común para desarrollo
+    "http://localhost", # Sin puerto específico
+    "http://127.0.0.1", # Sin puerto específico
     # Agrega aquí la URL de tu frontend cuando esté desplegado
     # "https://www.tucreditosys.com",
 ]
 
+# Configuración adicional de CORS para desarrollo
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = True  # Solo para desarrollo
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 
+
+# Configuración de Email para Alertas
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'iyouok10@gmail.com'  # Tu email real
+
+EMAIL_HOST_PASSWORD = 'zonj zqcp zdwk hayg'  # 🔑 REEMPLAZAR CON TU CONTRASEÑA DE APLICACIÓN
+DEFAULT_FROM_EMAIL = 'CreditoSys <iyouok10@gmail.com>'
+
+# Para desarrollo, usar backend de consola (no envía emails reales)
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    print("⚠️  MODO DESARROLLO: Los emails se mostrarán en la consola")
+    print("📧 Para emails reales:")
+    print("   1. Cambia DEBUG = False en settings.py")
+    print("   2. Reemplaza 'tu-password-app' con tu contraseña de aplicación de Gmail")
+    print("   3. Reinicia el servidor con: docker-compose restart backend") 

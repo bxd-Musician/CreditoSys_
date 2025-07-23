@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CreditoSys - Panel de Administración</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="styles.css" rel="stylesheet">
 </head>
@@ -24,7 +25,7 @@
             <div class="logo">
                 <i class="fas fa-university"></i>
                 <div>
-                    <h1>CreditoSYS</h1>
+                    <h1>CreditoSys</h1>
                     <small>Panel de Administración</small>
                 </div>
             </div>
@@ -32,7 +33,7 @@
                 <div>
                     <strong id="userName">Administrador</strong>
                     <br>
-                    <small id="userRole">Administrador</small>
+                    <small id="userRole">Admin</small>
                 </div>
                 <div class="user-avatar" id="userAvatar">A</div>
                 <div class="d-flex gap-1">
@@ -116,7 +117,7 @@
                         <div class="card-header">
                             <h3>Actividad Reciente</h3>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body" id="actividadRecienteAdmin">
                             <div style="padding: 10px; border-left: 3px solid var(--success-color); margin-bottom: 10px;">
                                 <strong>Usuario Creado</strong><br>
                                 <small>María López - Cliente</small><br>
@@ -143,27 +144,27 @@
                         <div class="card-body">
                             <div class="d-flex justify-between align-center mb-2">
                                 <span>Base de Datos</span>
-                                <span class="badge status-aprobada">Online</span>
+                                <span id="estadoDB" class="badge status-aprobada">ONLINE</span>
                             </div>
                             <div class="d-flex justify-between align-center mb-2">
                                 <span>API de Scoring</span>
-                                <span class="badge status-aprobada">Online</span>
+                                <span id="estadoScoring" class="badge status-aprobada">ONLINE</span>
                             </div>
                             <div class="d-flex justify-between align-center mb-2">
                                 <span>Sistema de Pagos</span>
-                                <span class="badge status-aprobada">Online</span>
+                                <span id="estadoPagos" class="badge status-aprobada">ONLINE</span>
                             </div>
                             <div class="d-flex justify-between align-center mb-2">
                                 <span>Servidor de Archivos</span>
-                                <span class="badge status-revision">Mantenimiento</span>
+                                <span id="estadoArchivos" class="badge status-revision">MANTENIMIENTO</span>
                             </div>
                             <div class="d-flex justify-between align-center mb-2">
                                 <span>CPU</span>
-                                <span>45%</span>
+                                <span id="estadoCPU">45%</span>
                             </div>
                             <div class="d-flex justify-between align-center mb-2">
                                 <span>Memoria</span>
-                                <span>62%</span>
+                                <span id="estadoMemoria">62%</span>
                             </div>
                         </div>
                     </div>
@@ -219,67 +220,8 @@
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td>001</td>
-                                    <td>Juan Pérez</td>
-                                    <td>juan@email.com</td>
-                                    <td><span class="badge" style="background: var(--primary-color); color: white;">Cliente</span></td>
-                                    <td><span class="badge status-aprobada">Activo</span></td>
-                                    <td>21/05/2025 10:30</td>
-                                    <td>
-                                        <div class="d-flex gap-1">
-                                            <button class="btn btn-primary btn-sm" onclick="editarUsuario('001')">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="btn btn-warning btn-sm" onclick="cambiarEstado('001')">
-                                                <i class="fas fa-user-lock"></i>
-                                            </button>
-                                            <button class="btn btn-danger btn-sm" onclick="eliminarUsuario('001')">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>002</td>
-                                    <td>María García</td>
-                                    <td>maria@email.com</td>
-                                    <td><span class="badge" style="background: var(--success-color); color: white;">Evaluador</span></td>
-                                    <td><span class="badge status-aprobada">Activo</span></td>
-                                    <td>21/05/2025 09:15</td>
-                                    <td>
-                                        <div class="d-flex gap-1">
-                                            <button class="btn btn-primary btn-sm" onclick="editarUsuario('002')">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="btn btn-warning btn-sm" onclick="cambiarEstado('002')">
-                                                <i class="fas fa-user-lock"></i>
-                                            </button>
-                                            <button class="btn btn-danger btn-sm" onclick="eliminarUsuario('002')">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>003</td>
-                                    <td>Carlos López</td>
-                                    <td>carlos@email.com</td>
-                                    <td><span class="badge" style="background: var(--error-color); color: white;">Admin</span></td>
-                                    <td><span class="badge status-aprobada">Activo</span></td>
-                                    <td>21/05/2025 08:45</td>
-                                    <td>
-                                        <div class="d-flex gap-1">
-                                            <button class="btn btn-primary btn-sm" onclick="editarUsuario('003')">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="btn btn-secondary btn-sm" disabled>
-                                                <i class="fas fa-shield-alt"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+                            <tbody id="usuariosTableBody">
+                                <!-- Los datos se cargarán dinámicamente desde JavaScript -->
                             </tbody>
                         </table>
                     </div>
@@ -395,11 +337,11 @@
                                     <h5>Configuración de Validación</h5>
                                     <div class="form-group">
                                         <label>Tiempo máximo de validación (días)</label>
-                                        <input type="number" class="form-input" value="3" min="1" max="30">
+                                        <input type="number" class="form-input" id="tiempoValidacion" value="3" min="1" max="30">
                                     </div>
                                     <div class="form-group">
                                         <label>Tamaño máximo de archivo (MB)</label>
-                                        <input type="number" class="form-input" value="50" min="1" max="100">
+                                        <input type="number" class="form-input" id="tamanoArchivo" value="50" min="1" max="100">
                                     </div>
                                 </div>
                             </div>
@@ -549,22 +491,23 @@
                             <div class="card">
                                 <div class="card-header">
                                     <h4>Métricas del Mes</h4>
+                                    <small id="periodoReporte">Período: Julio 2025</small>
                                 </div>
-                                <div class="card-body text-center">
+                                <div class="card-body text-center" id="metricasMes">
                                     <div class="mb-3">
-                                        <h3 style="color: var(--primary-color);">156</h3>
+                                        <h3 style="color: var(--primary-color);">0</h3>
                                         <p>Nuevas Solicitudes</p>
                                     </div>
                                     <div class="mb-3">
-                                        <h3 style="color: var(--success-color);">118</h3>
+                                        <h3 style="color: var(--success-color);">0</h3>
                                         <p>Aprobaciones</p>
                                     </div>
                                     <div class="mb-3">
-                                        <h3 style="color: var(--error-color);">23</h3>
+                                        <h3 style="color: var(--error-color);">0</h3>
                                         <p>Rechazos</p>
                                     </div>
                                     <div class="mb-3">
-                                        <h3 style="color: var(--warning-color);">15</h3>
+                                        <h3 style="color: var(--warning-color);">0</h3>
                                         <p>En Revisión</p>
                                     </div>
                                 </div>
@@ -578,19 +521,25 @@
                                 <div class="card-body">
                                     <div class="form-group">
                                         <label>Alerta por alta morosidad (%)</label>
-                                        <input type="number" class="form-input" value="5" min="1" max="20">
+                                        <input type="number" class="form-input" id="alertaMorosidad" value="5" min="1" max="20">
                                     </div>
                                     <div class="form-group">
                                         <label>Alerta por bajo rendimiento (%)</label>
-                                        <input type="number" class="form-input" value="85" min="50" max="100">
+                                        <input type="number" class="form-input" id="alertaRendimiento" value="85" min="50" max="100">
                                     </div>
                                     <div class="form-group">
                                         <label>Alerta por uso de CPU (%)</label>
-                                        <input type="number" class="form-input" value="80" min="50" max="100">
+                                        <input type="number" class="form-input" id="alertaCPU" value="80" min="50" max="100">
                                     </div>
                                     <div class="form-group">
                                         <label>Notificaciones por email</label>
-                                        <input type="email" class="form-input" placeholder="admin@empresa.com">
+                                        <input type="email" class="form-input" id="emailAlertas" placeholder="admin@empresa.com">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Estado de las alertas</label>
+                                        <div id="estadoAlertas" class="alert-info p-2 rounded">
+                                            <small><i class="fas fa-info-circle"></i> Sistema de alertas activo</small>
+                                        </div>
                                     </div>
                                     <button class="btn btn-success btn-block" onclick="configurarAlertas()">
                                         <i class="fas fa-bell"></i> Configurar Alertas
@@ -765,10 +714,10 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form id="formUsuario">
+                <form id="formUsuario" onsubmit="event.preventDefault(); crearUsuario();">
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Nombre</label>
+                            <label class="form-label">Username</label>
                             <input type="text" class="form-input" id="modalNombre" required>
                         </div>
                         <div class="form-group">
@@ -783,8 +732,7 @@
                                 <option value="">Seleccionar rol</option>
                                 <option value="cliente">Cliente</option>
                                 <option value="evaluador">Evaluador</option>
-                                <option value="administrador">Administrador</option>
-                                <option value="auditor">Auditor Externo</option>
+                                <option value="admin">Administrador</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -796,13 +744,18 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Contraseña Temporal</label>
-                        <input type="password" class="form-input" id="modalPassword">
-                        <small>Dejar vacío para generar automáticamente</small>
+                        <label class="form-label">Contraseña</label>
+                        <div class="input-group">
+                            <input type="password" class="form-input" id="modalPassword" required>
+                            <button type="button" class="btn btn-outline" onclick="generarPassword()">
+                                <i class="fas fa-key"></i> Generar
+                            </button>
+                        </div>
+                        <small>La contraseña debe tener al menos 6 caracteres</small>
                     </div>
                     <div class="text-center mt-3">
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Guardar Usuario
+                            <i class="fas fa-save"></i> Crear Usuario
                         </button>
                     </div>
                 </form>
@@ -810,7 +763,6 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
     <script>
         // Funciones específicas del panel de administración
         
@@ -943,5 +895,6 @@
             updatePonderacionesAdmin();
         });
     </script>
+    <script src="script.js"></script>
 </body>
 </html>
