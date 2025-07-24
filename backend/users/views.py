@@ -98,6 +98,8 @@ class AdminStatsView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
+        user = request.user
+        print("DEBUG AdminStatsView:", user.username, user.role, user.is_active, user.is_staff, user.is_superuser)
         User = get_user_model()
         total_usuarios = User.objects.count()
         solicitudes_procesadas = Application.objects.count()
@@ -115,11 +117,15 @@ class AdminActivityView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
+        user = request.user
+        print("DEBUG AdminActivityView GET:", user.username, user.role, user.is_active, user.is_staff, user.is_superuser)
         logs = AdminLog.objects.order_by('-timestamp')[:10]
         data = [log.as_dict() for log in logs]
         return Response(data)
 
     def post(self, request):
+        user = request.user
+        print("DEBUG AdminActivityView POST:", user.username, user.role, user.is_active, user.is_staff, user.is_superuser)
         # Solo admins pueden registrar eventos
         tipo = request.data.get('tipo')
         titulo = request.data.get('titulo')
@@ -143,6 +149,8 @@ class SystemStatusView(APIView):
             return 'OFFLINE'
 
     def get(self, request):
+        user = request.user
+        print("DEBUG SystemStatusView:", user.username, user.role, user.is_active, user.is_staff, user.is_superuser)
         # Estado de la base de datos
         try:
             connection.ensure_connection()
@@ -187,6 +195,8 @@ class AdminUsersView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
+        user = request.user
+        print("DEBUG AdminUsersView GET:", user.username, user.role, user.is_active, user.is_staff, user.is_superuser)
         # Parámetros de filtrado
         search = request.query_params.get('search', '')
         role_filter = request.query_params.get('role', '')
@@ -239,6 +249,8 @@ class AdminUserDetailView(APIView):
     permission_classes = [IsAdminUser]
     
     def get(self, request, user_id):
+        user = request.user
+        print("DEBUG AdminUserDetailView GET:", user.username, user.role, user.is_active, user.is_staff, user.is_superuser)
         """Obtener detalles de un usuario específico"""
         try:
             user = User.objects.get(id=user_id)
@@ -259,6 +271,8 @@ class AdminUserDetailView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def put(self, request, user_id):
+        user = request.user
+        print("DEBUG AdminUserDetailView PUT:", user.username, user.role, user.is_active, user.is_staff, user.is_superuser)
         """Actualizar datos de un usuario"""
         try:
             user = User.objects.get(id=user_id)
@@ -295,6 +309,8 @@ class AdminUserDetailView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def delete(self, request, user_id):
+        user = request.user
+        print("DEBUG AdminUserDetailView DELETE:", user.username, user.role, user.is_active, user.is_staff, user.is_superuser)
         """Eliminar un usuario"""
         try:
             user = User.objects.get(id=user_id)
@@ -320,6 +336,8 @@ class AdminUserChangeRoleView(APIView):
     permission_classes = [IsAdminUser]
     
     def post(self, request, user_id):
+        user = request.user
+        print("DEBUG AdminUserChangeRoleView POST:", user.username, user.role, user.is_active, user.is_staff, user.is_superuser)
         """Cambiar el rol de un usuario"""
         try:
             user = User.objects.get(id=user_id)
@@ -368,6 +386,8 @@ class AdminUserPermissionsView(APIView):
     permission_classes = [IsAdminUser]
     
     def get(self, request, user_id):
+        user = request.user
+        print("DEBUG AdminUserPermissionsView GET:", user.username, user.role, user.is_active, user.is_staff, user.is_superuser)
         """Obtener permisos de un usuario"""
         try:
             user = User.objects.get(id=user_id)
@@ -414,6 +434,8 @@ class AdminUserPermissionsView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def post(self, request, user_id):
+        user = request.user
+        print("DEBUG AdminUserPermissionsView POST:", user.username, user.role, user.is_active, user.is_staff, user.is_superuser)
         """Actualizar permisos de un usuario"""
         try:
             user = User.objects.get(id=user_id)
@@ -440,6 +462,8 @@ class AuditLogView(APIView):
     permission_classes = [IsAdminUser]
     
     def get(self, request):
+        user = request.user
+        print("DEBUG AuditLogView GET:", user.username, user.role, user.is_active, user.is_staff, user.is_superuser)
         """Obtener logs de auditoría con filtros"""
         try:
             # Crear logs de prueba si no hay ninguno
@@ -522,6 +546,8 @@ class AuditLogView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def post(self, request):
+        user = request.user
+        print("DEBUG AuditLogView POST:", user.username, user.role, user.is_active, user.is_staff, user.is_superuser)
         """Registrar un nuevo evento de auditoría"""
         try:
             # Obtener IP del cliente
@@ -563,6 +589,8 @@ class AuditLogDetailView(APIView):
     permission_classes = [IsAdminUser]
     
     def get(self, request, log_id):
+        user = request.user
+        print("DEBUG AuditLogDetailView GET:", user.username, user.role, user.is_active, user.is_staff, user.is_superuser)
         """Obtener un log de auditoría específico por ID"""
         try:
             log = AuditLog.objects.get(id=log_id)
@@ -577,6 +605,8 @@ class AdminReportsView(APIView):
     permission_classes = [IsAdminUser]
     
     def get(self, request):
+        user = request.user
+        print("DEBUG AdminReportsView:", user.username, user.role, user.is_active, user.is_staff, user.is_superuser)
         """Obtener reportes administrativos con datos reales"""
         try:
             from django.db.models import Count, Sum, Avg
@@ -823,6 +853,8 @@ class AlertasView(APIView):
     permission_classes = [IsAdminUser]
     
     def get(self, request):
+        user = request.user
+        print("DEBUG AlertasView GET:", user.username, user.role, user.is_active, user.is_staff, user.is_superuser)
         """Obtener configuración actual de alertas y estado del sistema"""
         try:
             from django.db.models import Count, Sum, Avg
@@ -970,6 +1002,8 @@ class AlertasView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def post(self, request):
+        user = request.user
+        print("DEBUG AlertasView POST:", user.username, user.role, user.is_active, user.is_staff, user.is_superuser)
         """Actualizar configuración de alertas"""
         try:
             from .models import AlertasConfiguracion
@@ -1185,10 +1219,11 @@ def crear_logs_auditoria_prueba():
         print(f"Error creando logs de prueba: {e}")
 
 class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
     def get(self, request):
-        """Obtener perfil del usuario actual"""
         try:
             user = request.user
+            print("DEBUG UserProfileView:", user.username, user.role, user.is_active, user.is_staff, user.is_superuser)
             return Response({
                 'id': user.id,
                 'username': user.username,
@@ -1197,10 +1232,13 @@ class UserProfileView(APIView):
                 'last_name': user.last_name,
                 'role': user.role,
                 'is_active': user.is_active,
+                'is_staff': user.is_staff,
+                'is_superuser': user.is_superuser,
                 'date_joined': user.date_joined,
                 'last_login': user.last_login
             })
         except Exception as e:
+            print("ERROR UserProfileView:", str(e))
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def put(self, request):

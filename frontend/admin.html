@@ -894,9 +894,9 @@
             const userLoaded = window.loadUserData ? window.loadUserData() : false;
             if (!userLoaded || !window.currentUser || !window.currentUser.access_token) {
                 if (window.showNotification) window.showNotification('Sesión expirada. Redirigiendo al login...', 'error');
-                setTimeout(() => {
-                    window.location.href = 'login.html';
-                }, 1200);
+                // setTimeout(() => {
+                //     window.location.href = 'login.html';
+                // }, 1200); // COMENTADO PARA DEPURAR
                 return;
             }
             loadUserData();

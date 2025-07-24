@@ -299,9 +299,7 @@
                                         <button class="btn btn-warning" onclick="enviarRevisionManual()">
                                             <i class="fas fa-user"></i> Revisión Manual
                                         </button>
-                                        <button class="btn btn-secondary" onclick="simularEscenarios()">
-                                            <i class="fas fa-chart-line"></i> Simular
-                                        </button>
+                                
                                     </div>
                                 </div>
                             </div>
@@ -325,13 +323,13 @@
                                     <h4>Información Completa</h4>
                                 </div>
                                 <div class="card-body">
-                                    <p><strong>Cliente:</strong> Carlos Mendoza</p>
-                                    <p><strong>Score Automático:</strong> 65</p>
-                                    <p><strong>Monto Solicitado:</strong> S/ 25,000</p>
-                                    <p><strong>Monto Recomendado:</strong> S/ 20,000</p>
-                                    <p><strong>Ingresos Mensuales:</strong> S/ 3,500</p>
-                                    <p><strong>Ratio Deuda/Ingreso:</strong> 35%</p>
-                                    <p><strong>Historial:</strong> 2 créditos previos</p>
+                                    <p><strong>Cliente:</strong> <span id="revCliente">-</span></p>
+                                    <p><strong>Score Automático:</strong> <span id="revScore">-</span></p>
+                                    <p><strong>Monto Solicitado:</strong> S/ <span id="revMonto">-</span></p>
+                                    <p><strong>Monto Recomendado:</strong> S/ <span id="revMontoRecomendado">-</span></p>
+                                    <p><strong>Ingresos Mensuales:</strong> S/ <span id="revIngresos">-</span></p>
+                                    <p><strong>Ratio Deuda/Ingreso:</strong> <span id="revRatio">-</span></p>
+                                    <p><strong>Historial:</strong> <span id="revHistorial">-</span></p>
                                 </div>
                             </div>
                         </div>
@@ -347,7 +345,6 @@
                                             <option value="">Seleccionar decisión</option>
                                             <option value="aprobar">Aprobar</option>
                                             <option value="rechazar">Rechazar</option>
-                                            <option value="solicitar_info">Solicitar más información</option>
                                         </select>
                                     </div>
                                     <div class="form-group">
@@ -368,33 +365,6 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-3">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h4>Simulador de Escenarios</h4>
-                                </div>
-                                <div class="card-body">
-                                    <h5>Escenario 1: Conservador</h5>
-                                    <p>Monto: S/ 15,000</p>
-                                    <p>Tasa: 14% anual</p>
-                                    <p>Riesgo: Bajo</p>
-                                    
-                                    <h5>Escenario 2: Moderado</h5>
-                                    <p>Monto: S/ 20,000</p>
-                                    <p>Tasa: 13.5% anual</p>
-                                    <p>Riesgo: Medio</p>
-                                    
-                                    <h5>Escenario 3: Agresivo</h5>
-                                    <p>Monto: S/ 25,000</p>
-                                    <p>Tasa: 15% anual</p>
-                                    <p>Riesgo: Alto</p>
-                                    
-                                    <button class="btn btn-secondary btn-block mt-3" onclick="generarNuevoEscenario()">
-                                        <i class="fas fa-dice"></i> Nuevo Escenario
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -411,7 +381,7 @@
                         <div class="col-2">
                             <div class="card">
                                 <div class="card-body text-center">
-                                    <h4>25</h4>
+                                    <h4 id="reporteEvaluacionesMes">-</h4>
                                     <p>Evaluaciones este mes</p>
                                 </div>
                             </div>
@@ -419,7 +389,7 @@
                         <div class="col-2">
                             <div class="card">
                                 <div class="card-body text-center">
-                                    <h4>18</h4>
+                                    <h4 id="reporteAprobaciones">-</h4>
                                     <p>Aprobaciones</p>
                                 </div>
                             </div>
@@ -427,7 +397,7 @@
                         <div class="col-2">
                             <div class="card">
                                 <div class="card-body text-center">
-                                    <h4>72%</h4>
+                                    <h4 id="reporteTasaAprobacion">-</h4>
                                     <p>Tasa de aprobación</p>
                                 </div>
                             </div>
@@ -444,6 +414,7 @@
         </section>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="script.js"></script>
     <script src="evaluador.js"></script>
     <script>
@@ -493,10 +464,6 @@
         
         function generarNuevoEscenario() {
             showNotification('Generando nuevo escenario...', 'info');
-        }
-        
-        function generarReporteCompleto() {
-            showNotification('Generando reporte en PDF...', 'info');
         }
         
         function actualizarPendientes() {

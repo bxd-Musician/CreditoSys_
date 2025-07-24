@@ -176,10 +176,30 @@ function hookActualizarPendientes() {
     if (btn) btn.onclick = cargarSolicitudesPendientes;
 }
 
+async function cargarReportesEvaluacion() {
+    let user = window.currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}');
+    if (!user || !user.access_token) return;
+    try {
+        const resp = await fetch('/api/applications/evaluator-stats/', {
+            headers: { 'Authorization': `Bearer ${user.access_token}` }
+        });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        // Suponiendo que el backend retorna: evaluadas_mes, aprobaciones, tasa_aprobacion
+        if (data.evaluadas_mes !== undefined) document.getElementById('reporteEvaluacionesMes').textContent = data.evaluadas_mes;
+        if (data.aprobaciones !== undefined) document.getElementById('reporteAprobaciones').textContent = data.aprobaciones;
+        if (data.tasa_aprobacion !== undefined) document.getElementById('reporteTasaAprobacion').textContent = data.tasa_aprobacion + '%';
+    } catch (e) {
+        // No mostrar error visual, solo log
+        console.error('Error cargando reportes de evaluación', e);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     cargarEstadisticasEvaluador();
     cargarSolicitudesPendientes();
     hookActualizarPendientes();
+    cargarReportesEvaluacion();
 });
 
 window.iniciarEvaluacion = async function(id) {
@@ -209,6 +229,17 @@ window.showSection = function(sectionName) {
     if (targetSection) {
         targetSection.classList.add('active');
         targetSection.classList.add('fade-in');
+    }
+    // Llenar datos reales en revisión manual si corresponde
+    if (sectionName === 'revision' && window.solicitudSeleccionadaScoring) {
+        const s = window.solicitudSeleccionadaScoring;
+        if (document.getElementById('revCliente')) document.getElementById('revCliente').textContent = s.client_username ?? '-';
+        if (document.getElementById('revScore')) document.getElementById('revScore').textContent = s.credit_score ?? '-';
+        if (document.getElementById('revMonto')) document.getElementById('revMonto').textContent = s.amount !== undefined ? Number(s.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-';
+        if (document.getElementById('revMontoRecomendado')) document.getElementById('revMontoRecomendado').textContent = s.monto_recomendado !== undefined ? Number(s.monto_recomendado).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : (s.amount !== undefined ? Number(s.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-');
+        if (document.getElementById('revIngresos')) document.getElementById('revIngresos').textContent = s.ingresos !== undefined ? Number(s.ingresos).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-';
+        if (document.getElementById('revRatio')) document.getElementById('revRatio').textContent = s.ratio_deuda_ingreso !== undefined ? s.ratio_deuda_ingreso + '%' : '-';
+        if (document.getElementById('revHistorial')) document.getElementById('revHistorial').textContent = s.historial_crediticio !== undefined ? s.historial_crediticio : '-';
     }
 };
 
@@ -346,8 +377,9 @@ function llenarScoringConSolicitud(solicitud) {
 }
 
 // Función para guardar el score en el backend
-async function guardarScoreSolicitud(id, score) {
+async function guardarScoreSolicitud(id, score, aprobar = false) {
     let user = window.currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}');
+    const body = aprobar ? { credit_score: score, status: 'aprobada' } : { credit_score: score };
     try {
         await fetch(`/api/applications/${id}/`, {
             method: 'PATCH',
@@ -355,8 +387,14 @@ async function guardarScoreSolicitud(id, score) {
                 'Authorization': `Bearer ${user.access_token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ credit_score: score })
+            body: JSON.stringify({
+                ...body,
+                evaluated_by: user.id,
+                evaluated_at: new Date().toISOString()
+            })
         });
+        cargarEstadisticasEvaluador();
+        cargarReportesEvaluacion();
     } catch (e) {
         showNotification('Error al guardar el score en el backend', 'error');
     }
@@ -370,7 +408,7 @@ function hookGuardarScoreScoring() {
         btnAprobar.onclick = async function() {
             const score = parseInt(document.getElementById('scoreCalculado').textContent) || 0;
             if (window.solicitudSeleccionadaScoring) {
-                await guardarScoreSolicitud(window.solicitudSeleccionadaScoring.id, score);
+                await guardarScoreSolicitud(window.solicitudSeleccionadaScoring.id, score, true);
             }
             showNotification('Solicitud aprobada automáticamente', 'success');
         };
@@ -592,3 +630,138 @@ function calcularScoreRealTime() {
     else clasificacion = 'Deficiente';
     document.getElementById('clasificacionScore').textContent = clasificacion;
 } 
+
+async function refreshTokenIfNeeded() {
+    let user = window.currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}');
+    if (!user || !user.refresh_token) return false;
+    try {
+        const resp = await fetch('/api/token/refresh/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh: user.refresh_token })
+        });
+        if (!resp.ok) return false;
+        const data = await resp.json();
+        if (data.access) {
+            user.access_token = data.access;
+            window.currentUser = user;
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            return true;
+        }
+        return false;
+    } catch (e) {
+        return false;
+    }
+}
+
+window.guardarDecisionManual = async function() {
+    const decision = document.getElementById('decisionManual').value;
+    const monto = parseFloat(document.getElementById('montoManual').value) || 0;
+    const tasa = parseFloat(document.getElementById('tasaManual').value) || 0;
+    const observaciones = document.getElementById('observacionesManual').value || '';
+    let user = window.currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}');
+    if (!decision) {
+        showNotification('Debe seleccionar una decisión', 'error');
+        return;
+    }
+    if (!window.solicitudSeleccionadaScoring) {
+        showNotification('No hay solicitud seleccionada', 'error');
+        return;
+    }
+    if (!user || !user.access_token) {
+        showNotification('Sesión expirada. Redirigiendo al login...', 'error');
+        setTimeout(() => window.location.href = 'login.html', 1200);
+        return;
+    }
+    let status = decision === 'aprobar' ? 'aprobada' : 'rechazada';
+    let intentos = 0;
+    while (intentos < 2) {
+        try {
+            const resp = await fetch(`/api/applications/${window.solicitudSeleccionadaScoring.id}/`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${user.access_token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    status: status,
+                    amount_aprobado: monto,
+                    tasa_aprobada: tasa,
+                    evaluator_comments: observaciones,
+                    evaluated_by: user.id,
+                    evaluated_at: new Date().toISOString()
+                })
+            });
+            if (resp.status === 401 && intentos === 0) {
+                // Intentar refrescar token
+                const refreshed = await refreshTokenIfNeeded();
+                if (refreshed) {
+                    user = window.currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}');
+                    intentos++;
+                    continue;
+                } else {
+                    showNotification('Sesión expirada. Redirigiendo al login...', 'error');
+                    setTimeout(() => window.location.href = 'login.html', 1200);
+                    return;
+                }
+            }
+            if (!resp.ok) {
+                let msg = 'Error al guardar la decisión';
+                try {
+                    const data = await resp.json();
+                    if (data && data.detail) msg += ': ' + data.detail;
+                    if (data && data.error) msg += ': ' + data.error;
+                    if (typeof data === 'object') msg += ' ' + JSON.stringify(data);
+                    console.error('Respuesta backend:', data);
+                } catch (err) {
+                    msg += ' (no se pudo leer el detalle del error)';
+                }
+                showNotification(msg, 'error');
+                return;
+            }
+            showNotification('Decisión guardada exitosamente', 'success');
+            cargarEstadisticasEvaluador();
+            cargarReportesEvaluacion();
+            showSection('pendientes');
+            return;
+        } catch (e) {
+            showNotification('Error inesperado al guardar la decisión', 'error');
+            console.error('Error JS:', e);
+            return;
+        }
+    }
+}; 
+
+// Hook para actualizar reportes al cambiar de pestaña
+const navTabs = document.querySelectorAll('.nav-tab');
+navTabs.forEach(tab => {
+    tab.addEventListener('click', function(e) {
+        if (tab.textContent.toLowerCase().includes('reportes')) {
+            cargarReportesEvaluacion();
+        }
+    });
+}); 
+
+window.generarReporteCompleto = async function() {
+    // Usar jsPDF para generar un PDF simple con los datos actuales
+    if (typeof window.jspdf === 'undefined' && typeof window.jsPDF === 'undefined') {
+        showNotification('jsPDF no está cargado. No se puede generar el PDF.', 'error');
+        return;
+    }
+    const doc = new (window.jsPDF || window.jspdf.jsPDF)();
+    doc.setFontSize(18);
+    doc.text('Reporte de Evaluación', 14, 20);
+    doc.setFontSize(12);
+    let y = 35;
+    doc.text('Evaluaciones este mes: ' + (document.getElementById('reporteEvaluacionesMes').textContent || '-'), 14, y);
+    y += 10;
+    doc.text('Aprobaciones: ' + (document.getElementById('reporteAprobaciones').textContent || '-'), 14, y);
+    y += 10;
+    doc.text('Tasa de aprobación: ' + (document.getElementById('reporteTasaAprobacion').textContent || '-') , 14, y);
+    y += 20;
+    doc.text('Generado por: ' + (window.currentUser?.username || '-'), 14, y);
+    y += 10;
+    doc.text('Fecha: ' + (new Date()).toLocaleString(), 14, y);
+    doc.save('reporte_evaluacion.pdf');
+    showNotification('Reporte PDF generado y descargado', 'success');
+}; 

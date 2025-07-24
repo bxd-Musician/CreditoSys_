@@ -124,6 +124,10 @@ function loadUserData() {
 }
 
 function updateUserInterface() {
+    if (!currentUser) {
+        // window.location.href = 'login.html'; // COMENTADO PARA DEPURAR
+        return;
+    }
     const userNameElement = document.getElementById('userName');
     const userRoleElement = document.getElementById('userRole');
     const userAvatarElement = document.getElementById('userAvatar');
@@ -1188,7 +1192,7 @@ async function fetchAuthenticated(url, options = {}) {
         hideLoading();
         console.error('No hay token de acceso disponible. currentUser:', currentUser);
         showNotification('Tu sesión ha expirado o no has iniciado sesión. Por favor, vuelve a iniciar sesión.', 'error');
-        setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+        // setTimeout(() => { window.location.href = 'login.html'; }, 1500); // COMENTADO PARA DEPURAR
         throw new Error('No hay token de acceso disponible.');
     }
     // Crear AbortController para manejar timeouts
@@ -1237,7 +1241,7 @@ async function fetchAuthenticated(url, options = {}) {
                 return await newResponse.json();
             } else {
                 showNotification('Sesión expirada. Redirigiendo al login...', 'error');
-                setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+                // setTimeout(() => { window.location.href = 'login.html'; }, 2000); // COMENTADO PARA DEPURAR
                 throw new Error('No se pudo renovar el token.');
             }
         } else if (!response.ok) {
@@ -1434,6 +1438,7 @@ function updateSolicitudStats(solicitudes) {
     document.getElementById('totalSolicitudes').textContent = total;
     document.getElementById('solicitudesAprobadas').textContent = aprobadas;
     document.getElementById('solicitudesPendientes').textContent = pendientes;
+    document.getElementById('solicitudesRechazadas').textContent = solicitudes.filter(s => s.status === 'rechazada').length;
     document.getElementById('montoTotal').textContent = `S/ ${montoAprobado.toLocaleString()}`;
 }
 
@@ -2853,7 +2858,7 @@ async function cargarReportesAdmin() {
         if (!currentUser.access_token) {
             console.error('No hay token de acceso disponible');
             showNotification('Sesión expirada. Redirigiendo al login...', 'error');
-            setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+            // setTimeout(() => { window.location.href = 'login.html'; }, 2000); // COMENTADO PARA DEPURAR
             return;
         }
         
@@ -2894,7 +2899,7 @@ async function cargarReportesAdmin() {
                 
             } else {
                 showNotification('Sesión expirada. Redirigiendo al login...', 'error');
-                setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+                // setTimeout(() => { window.location.href = 'login.html'; }, 2000); // COMENTADO PARA DEPURAR
             }
         } else if (!response.ok) {
             throw new Error('No se pudo obtener reportes administrativos');
@@ -3287,13 +3292,13 @@ async function verificarToken() {
     
     if (!currentUser.access_token) {
         console.log('No hay token, redirigiendo al login');
-        window.location.href = 'login.html';
+        // window.location.href = 'login.html'; // COMENTADO PARA DEPURAR
         return false;
     }
     
     try {
-        // Cambia el endpoint a uno accesible para todos los roles
-        const response = await fetch('/api/applications/', {
+        // Usar endpoint universal para validar token
+        const response = await fetch('/api/auth/profile/', {
             headers: {
                 'Authorization': `Bearer ${currentUser.access_token}`,
                 'Content-Type': 'application/json'
@@ -3308,7 +3313,7 @@ async function verificarToken() {
             if (!refreshSuccess) {
                 console.log('Refresh falló, redirigiendo al login');
                 localStorage.removeItem('currentUser');
-                window.location.href = 'login.html';
+                // window.location.href = 'login.html'; // COMENTADO PARA DEPURAR
                 return false;
             }
         }
@@ -3708,45 +3713,69 @@ function normalizarUsuario(user) {
 
 // --- DASHBOARD: Cargar datos reales ---
 async function cargarDashboardDatos() {
+    // Normalizar usuario y asegurar role/type SOLO si faltan
+    if (!window.currentUser) {
+        try {
+            const userStr = localStorage.getItem('currentUser');
+            if (userStr) window.currentUser = JSON.parse(userStr);
+        } catch (e) { window.currentUser = {}; }
+    }
+    // Solo asignar si NO hay role ni type
+    if (!window.currentUser.type && !window.currentUser.role) {
+        window.currentUser.type = 'cliente';
+        window.currentUser.role = 'cliente';
+    }
+    // Si tiene uno de los dos, no tocar
     if (!currentUser || !currentUser.access_token) return;
     try {
         // 1. Estadísticas generales y score
         const stats = await fetchAuthenticated(`${API_BASE_URL}applications/user-stats/`);
-        document.getElementById('totalSolicitudes').textContent = stats.total_applications || 0;
-        document.getElementById('solicitudesAprobadas').textContent = stats.approved_applications || 0;
-        document.getElementById('solicitudesPendientes').textContent = stats.recent_applications_30_days || 0;
-        document.getElementById('montoTotal').textContent = `S/ ${(stats.total_amount_requested || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        const elTotal = document.getElementById('totalSolicitudes');
+        const elAprobadas = document.getElementById('solicitudesAprobadas');
+        const elPendientes = document.getElementById('solicitudesPendientes');
+        const elRechazadas = document.getElementById('solicitudesRechazadas');
+        const elMonto = document.getElementById('montoTotal');
+        const elScore = document.getElementById('scoreValue');
+        const elScoreText = document.getElementById('scoreText');
+        const elScoreBar = document.getElementById('scoreProgressBar');
+        if (elTotal) elTotal.textContent = stats.total_applications || 0;
+        if (elAprobadas) elAprobadas.textContent = stats.approved_applications || 0;
+        if (elPendientes) elPendientes.textContent = stats.recent_applications_30_days || 0;
+        if (elRechazadas) elRechazadas.textContent = stats.rejected_applications || 0;
+        if (elMonto) elMonto.textContent = `S/ ${(stats.total_amount_requested || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         // Score
         const score = stats.credit_score || 0;
-        document.getElementById('scoreValue').textContent = score;
+        if (elScore) elScore.textContent = score;
         let scoreText = '-';
         if (score >= 80) scoreText = 'Excelente';
         else if (score >= 70) scoreText = 'Bueno';
         else if (score >= 60) scoreText = 'Regular';
         else if (score > 0) scoreText = 'Deficiente';
-        document.getElementById('scoreText').textContent = scoreText;
-        document.getElementById('scoreProgressBar').style.width = `${score}%`;
+        if (elScoreText) elScoreText.textContent = scoreText;
+        if (elScoreBar) elScoreBar.style.width = `${score}%`;
         // 2. Solicitudes recientes
         const solicitudes = await fetchAuthenticated(`${API_BASE_URL}applications/`);
         const tbody = document.getElementById('recentSolicitudesTableBody');
-        tbody.innerHTML = '';
-        if (Array.isArray(solicitudes) && solicitudes.length > 0) {
-            // Ordenar por fecha descendente
-            solicitudes.sort((a, b) => new Date(b.application_date) - new Date(a.application_date));
-            solicitudes.slice(0, 5).forEach(s => {
-                const estadoClass = s.status === 'aprobada' ? 'status-aprobada' : s.status === 'pendiente' ? 'status-pendiente' : s.status === 'revision' ? 'status-revision' : 'status-rechazada';
-                tbody.innerHTML += `
-                    <tr>
-                        <td>#${s.id}</td>
-                        <td>${new Date(s.application_date).toLocaleDateString()}</td>
-                        <td>S/ ${Number(s.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                        <td><span class="badge ${estadoClass}">${s.status.charAt(0).toUpperCase() + s.status.slice(1)}</span></td>
-                        <td><button class="btn btn-primary btn-sm" onclick="verDetalle('${s.id}')"><i class="fas fa-eye"></i></button></td>
-                    </tr>
-                `;
-            });
-        } else {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center">No tienes solicitudes recientes.</td></tr>';
+        if (tbody) {
+            tbody.innerHTML = '';
+            if (Array.isArray(solicitudes) && solicitudes.length > 0) {
+                // Ordenar por fecha descendente
+                solicitudes.sort((a, b) => new Date(b.application_date) - new Date(a.application_date));
+                solicitudes.slice(0, 5).forEach(s => {
+                    const estadoClass = s.status === 'aprobada' ? 'status-aprobada' : s.status === 'pendiente' ? 'status-pendiente' : s.status === 'revision' ? 'status-revision' : 'status-rechazada';
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>#${s.id}</td>
+                            <td>${new Date(s.application_date).toLocaleDateString()}</td>
+                            <td>S/ ${Number(s.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                            <td><span class="badge ${estadoClass}">${s.status.charAt(0).toUpperCase() + s.status.slice(1)}</span></td>
+                            <td><button class="btn btn-primary btn-sm" onclick="verDetalle('${s.id}')"><i class="fas fa-eye"></i></button></td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No tienes solicitudes recientes.</td></tr>';
+            }
         }
     } catch (error) {
         console.error('Error cargando datos del dashboard:', error);

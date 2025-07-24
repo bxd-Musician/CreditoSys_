@@ -53,11 +53,30 @@ class ApplicationDetailView(generics.RetrieveUpdateDestroyAPIView):
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer_class = self.get_serializer_class()
-        serializer = serializer_class(instance, data=request.data, partial=True) # Usar partial=True para PATCH
+        partial = kwargs.pop('partial', True)
+        serializer = serializer_class(instance, data=request.data, partial=partial)
 
         if serializer.is_valid():
+            evaluated_by_id = request.data.get('evaluated_by')
+            evaluated_at = request.data.get('evaluated_at')
+            print(f"PATCH recibido: evaluated_by_id={evaluated_by_id}, evaluated_at={evaluated_at}")
+            if evaluated_by_id:
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+                try:
+                    instance.evaluated_by = User.objects.get(pk=evaluated_by_id)
+                    print(f"Asignado evaluated_by: {instance.evaluated_by}")
+                except User.DoesNotExist:
+                    print("Evaluador no encontrado")
+            if evaluated_at:
+                from django.utils.dateparse import parse_datetime
+                instance.evaluated_at = parse_datetime(evaluated_at)
+                print(f"Asignado evaluated_at: {instance.evaluated_at}")
             serializer.save()
+            instance.save()
+            print(f"Solicitud actualizada: {instance.id}, evaluated_by={instance.evaluated_by}, evaluated_at={instance.evaluated_at}")
             return Response(serializer.data)
+        print("Errores en el serializer:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     # Nota: No permitir DELETE por ahora para solicitudes de crédito, o con permisos muy restringidos.
@@ -169,6 +188,9 @@ class UserStatsView(APIView):
         # Solicitudes desembolsadas
         disbursed_applications = user_applications.filter(status='desembolsada').count()
         
+        # Solicitudes rechazadas
+        rejected_applications = user_applications.filter(status='rechazada').count()
+        
         # Monto total desembolsado
         total_disbursed = user_applications.filter(status='desembolsada').aggregate(
             total=Sum('amount')
@@ -186,6 +208,7 @@ class UserStatsView(APIView):
             'average_amount': float(avg_amount),
             'recent_applications_30_days': recent_applications,
             'approved_applications': approved_applications,
+            'rejected_applications': rejected_applications,
             'disbursed_applications': disbursed_applications,
             'total_disbursed_amount': float(total_disbursed),
             'average_credit_score': float(avg_credit_score),
@@ -294,6 +317,7 @@ class EvaluatorStatsView(APIView):
 
         now = timezone.now()
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
         # Solicitudes pendientes (no evaluadas)
         pendientes = Application.objects.filter(status__in=['pendiente', 'en_revision']).count()
@@ -309,6 +333,12 @@ class EvaluatorStatsView(APIView):
         aprobadas = Application.objects.filter(evaluated_by=user, status='aprobada').count() if hasattr(Application, 'evaluated_by') else 0
         tasa_aprobacion = (aprobadas / total_evaluadas * 100) if total_evaluadas > 0 else 0
 
+        # Evaluadas este mes
+        evaluadas_mes = Application.objects.filter(
+            evaluated_by=user,
+            evaluated_at__gte=month_start
+        ).count() if hasattr(Application, 'evaluated_by') and hasattr(Application, 'evaluated_at') else 0
+
         # Tiempo promedio de evaluación (en minutos)
         if hasattr(Application, 'evaluated_at') and hasattr(Application, 'last_updated'):
             tiempos = Application.objects.filter(evaluated_by=user).exclude(evaluated_at=None, last_updated=None).values_list('last_updated', 'evaluated_at')
@@ -321,5 +351,7 @@ class EvaluatorStatsView(APIView):
             'pendientes': pendientes,
             'evaluadas_hoy': evaluadas_hoy,
             'tasa_aprobacion': round(tasa_aprobacion, 2),
-            'tiempo_promedio': round(tiempo_promedio, 2)
+            'tiempo_promedio': round(tiempo_promedio, 2),
+            'evaluadas_mes': evaluadas_mes,
+            'aprobaciones': aprobadas
         })

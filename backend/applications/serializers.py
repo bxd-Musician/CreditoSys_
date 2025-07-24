@@ -21,7 +21,7 @@ class ApplicationSerializer(serializers.ModelSerializer):
     # Para mostrar el username del cliente en lugar de solo el ID
     client_username = serializers.CharField(source='client.username', read_only=True)
     client_email = serializers.CharField(source='client.email', read_only=True)
-
+    evaluated_by = serializers.PrimaryKeyRelatedField(read_only=True)
     class Meta:
         model = Application
         fields = [
@@ -29,7 +29,8 @@ class ApplicationSerializer(serializers.ModelSerializer):
             'status', 'application_date', 'last_updated', 'credit_score',
             'evaluator_comments', 'documents',
             # NUEVOS CAMPOS
-            'historial_crediticio', 'ingresos', 'activos', 'comportamiento'
+            'historial_crediticio', 'ingresos', 'activos', 'comportamiento',
+            'evaluated_by', 'evaluated_at'
         ]
         read_only_fields = ['client', 'status', 'application_date', 'last_updated', 'credit_score', 'evaluator_comments', 'documents']
 
@@ -38,12 +39,15 @@ class ApplicationSerializer(serializers.ModelSerializer):
         return Application.objects.create(**validated_data)
 
 class ApplicationUpdateSerializer(serializers.ModelSerializer):
-    # Serializer para permitir a evaluadores/admins actualizar ciertos campos
+    evaluated_by = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False, allow_null=True)
     class Meta:
         model = Application
-        fields = ['status', 'credit_score', 'evaluator_comments',
-                  # NUEVOS CAMPOS
-                  'historial_crediticio', 'ingresos', 'activos', 'comportamiento']
+        fields = [
+            'status', 'credit_score', 'evaluator_comments',
+            # NUEVOS CAMPOS
+            'historial_crediticio', 'ingresos', 'activos', 'comportamiento',
+            'evaluated_by', 'evaluated_at'
+        ]
 
 class PolicyConfigSerializer(serializers.ModelSerializer):
     class Meta:
