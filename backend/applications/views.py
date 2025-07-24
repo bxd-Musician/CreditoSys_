@@ -17,6 +17,7 @@ from rest_framework.permissions import IsAdminUser
 from .models import PolicyConfig
 from .serializers import PolicyConfigSerializer
 from users.models import AdminLog
+import logging
 
 class ApplicationListCreateView(generics.ListCreateAPIView):
     serializer_class = ApplicationSerializer
@@ -104,6 +105,29 @@ class ApplicationDocumentListView(generics.ListAPIView):
             return ApplicationDocument.objects.filter(application=application)
         except Application.DoesNotExist:
             raise Http404("La solicitud no existe.")
+
+
+class ApplicationDocumentDetailView(generics.RetrieveUpdateAPIView):
+    queryset = ApplicationDocument.objects.all()
+    serializer_class = ApplicationDocumentSerializer
+    permission_classes = [IsAuthenticated, IsOwnerOrAdminOrEvaluator]
+
+    def get_queryset(self):
+        application_id = self.kwargs.get('application_pk')
+        return ApplicationDocument.objects.filter(application_id=application_id)
+
+    def get_object(self):
+        application_id = self.kwargs.get('application_pk')
+        doc_id = self.kwargs.get('pk')
+        logger = logging.getLogger('django')
+        logger.info(f"[DEBUG] Buscando documento: application_id={application_id}, doc_id={doc_id}")
+        try:
+            doc = ApplicationDocument.objects.get(pk=doc_id, application_id=application_id)
+            logger.info(f"[DEBUG] Documento encontrado: {doc}")
+            return doc
+        except ApplicationDocument.DoesNotExist:
+            logger.error(f"[DEBUG] Documento NO encontrado: application_id={application_id}, doc_id={doc_id}")
+            raise Http404("El documento no existe para esta solicitud.")
 
 
 class UserStatsView(APIView):
@@ -259,3 +283,43 @@ class PolicyConfigView(APIView):
                 
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class EvaluatorStatsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        if not hasattr(user, 'role') or user.role != 'evaluador':
+            return Response({'error': 'Solo evaluadores pueden acceder a estas estadísticas.'}, status=403)
+
+        now = timezone.now()
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        # Solicitudes pendientes (no evaluadas)
+        pendientes = Application.objects.filter(status__in=['pendiente', 'en_revision']).count()
+
+        # Solicitudes evaluadas hoy por este evaluador
+        evaluadas_hoy = Application.objects.filter(
+            evaluated_by=user,
+            evaluated_at__gte=today_start
+        ).count() if hasattr(Application, 'evaluated_by') and hasattr(Application, 'evaluated_at') else 0
+
+        # Total evaluadas por este evaluador
+        total_evaluadas = Application.objects.filter(evaluated_by=user).count() if hasattr(Application, 'evaluated_by') else 0
+        aprobadas = Application.objects.filter(evaluated_by=user, status='aprobada').count() if hasattr(Application, 'evaluated_by') else 0
+        tasa_aprobacion = (aprobadas / total_evaluadas * 100) if total_evaluadas > 0 else 0
+
+        # Tiempo promedio de evaluación (en minutos)
+        if hasattr(Application, 'evaluated_at') and hasattr(Application, 'last_updated'):
+            tiempos = Application.objects.filter(evaluated_by=user).exclude(evaluated_at=None, last_updated=None).values_list('last_updated', 'evaluated_at')
+            tiempos_min = [abs((l - e).total_seconds())/60 for l, e in tiempos if l and e]
+            tiempo_promedio = sum(tiempos_min)/len(tiempos_min) if tiempos_min else 0
+        else:
+            tiempo_promedio = 0
+
+        return Response({
+            'pendientes': pendientes,
+            'evaluadas_hoy': evaluadas_hoy,
+            'tasa_aprobacion': round(tasa_aprobacion, 2),
+            'tiempo_promedio': round(tiempo_promedio, 2)
+        })

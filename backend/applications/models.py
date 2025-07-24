@@ -33,6 +33,13 @@ class Application(models.Model):
     # Información de evaluación (se llenará por evaluadores/admin)
     credit_score = models.IntegerField(null=True, blank=True) # Score crediticio (0-1000)
     evaluator_comments = models.TextField(null=True, blank=True) # Comentarios del evaluador
+    evaluated_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='evaluated_applications')
+    evaluated_at = models.DateTimeField(null=True, blank=True)
+    # NUEVOS CAMPOS PARA PUNTAJES INDIVIDUALES
+    historial_crediticio = models.IntegerField(null=True, blank=True)
+    ingresos = models.IntegerField(null=True, blank=True)
+    activos = models.IntegerField(null=True, blank=True)
+    comportamiento = models.IntegerField(null=True, blank=True)
 
     class Meta:
         ordering = ['-application_date'] # Ordenar por fecha descendente

@@ -3299,9 +3299,9 @@ async function verificarToken() {
                 'Content-Type': 'application/json'
             }
         });
-        
-        console.log('Debug - Token verification status:', response.status);
-        
+        const text = await response.text();
+        console.log('Debug - Token verification status:', response.status, text);
+
         if (response.status === 401) {
             console.log('Token inválido, intentando refresh...');
             const refreshSuccess = await attemptTokenRefresh();
@@ -3312,7 +3312,6 @@ async function verificarToken() {
                 return false;
             }
         }
-        
         return true;
     } catch (error) {
         console.error('Error verificando token:', error);

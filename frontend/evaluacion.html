@@ -108,6 +108,29 @@
                     </button>
                 </div>
                 <div class="card-body">
+                    <!-- Barra de búsqueda y paginación -->
+                    <div class="d-flex justify-between align-center mb-2">
+                        <input type="text" id="busquedaSolicitudes" class="form-input" placeholder="Buscar por cliente, ID o monto..." style="max-width: 250px;">
+                        <div id="paginacionSolicitudes" class="d-flex align-center gap-1"></div>
+                    </div>
+
+                    <!-- Modal de detalle/evaluación -->
+                    <div class="modal" id="modalDetalleSolicitud" style="display:none;position:fixed;z-index:9999;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.45);justify-content:center;align-items:center;">
+                        <div class="modal-content" style="max-width:600px;width:95%;border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.25);background:#fff;">
+                            <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 10px 24px;">
+                                <h3 style="margin:0;"><i class="fas fa-file-alt"></i> Detalle de Solicitud</h3>
+                                <button class="modal-close" onclick="cerrarModalDetalleSolicitud()" style="background:none;border:none;font-size:1.5em;cursor:pointer;"><i class="fas fa-times"></i></button>
+                            </div>
+                            <div class="modal-body" id="detalleSolicitudBody" style="padding:24px;">
+                                <!-- Aquí se cargan los datos dinámicamente -->
+                            </div>
+                            <div class="modal-footer" style="padding:16px;display:flex;justify-content:flex-end;gap:8px;">
+                                <button class="btn btn-primary" id="btnAprobarSolicitud">Aprobar</button>
+                                <button class="btn btn-danger" id="btnRechazarSolicitud">Rechazar</button>
+                                <button class="btn btn-secondary" onclick="cerrarModalDetalleSolicitud()">Cerrar</button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="table-container">
                         <table class="table">
                             <thead>
@@ -172,83 +195,22 @@
         <section id="validacion" class="content-section">
             <div class="card">
                 <div class="card-header">
-                    <h3><i class="fas fa-file-check"></i> Validación de Documentos - Solicitud #004</h3>
+                    <h3><i class="fas fa-file-check"></i> Validación de Documentos - Solicitud <span id="numSolicitudValidacion"></span></h3>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-2">
                             <h4>Información del Cliente</h4>
                             <div class="card">
-                                <div class="card-body">
-                                    <p><strong>Nombre:</strong> Ana Torres</p>
-                                    <p><strong>DNI:</strong> 12345678</p>
-                                    <p><strong>Email:</strong> ana.torres@email.com</p>
-                                    <p><strong>Teléfono:</strong> 999 888 777</p>
-                                    <p><strong>Monto:</strong> S/ 50,000</p>
-                                    <p><strong>Plazo:</strong> 60 meses</p>
+                                <div class="card-body" id="infoClienteValidacion">
+                                    <!-- Aquí se insertan los datos reales del cliente -->
                                 </div>
                             </div>
                         </div>
                         <div class="col-2">
                             <h4>Documentos a Validar</h4>
-                            <div class="card mb-2">
-                                <div class="card-body">
-                                    <h5><i class="fas fa-id-card"></i> DNI</h5>
-                                    <p>Documento Nacional de Identidad</p>
-                                    <div class="d-flex gap-1">
-                                        <button class="btn btn-primary btn-sm" onclick="verDocumento('dni')">
-                                            <i class="fas fa-eye"></i> Ver
-                                        </button>
-                                        <button class="btn btn-success btn-sm" onclick="validarDocumento('dni', true)">
-                                            <i class="fas fa-check"></i> Validar
-                                        </button>
-                                        <button class="btn btn-danger btn-sm" onclick="validarDocumento('dni', false)">
-                                            <i class="fas fa-times"></i> Rechazar
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="card mb-2">
-                                <div class="card-body">
-                                    <h5><i class="fas fa-receipt"></i> Recibos de Sueldo</h5>
-                                    <p>Últimos 3 meses</p>
-                                    <div class="d-flex gap-1">
-                                        <button class="btn btn-primary btn-sm" onclick="verDocumento('recibos')">
-                                            <i class="fas fa-eye"></i> Ver
-                                        </button>
-                                        <button class="btn btn-success btn-sm" onclick="validarDocumento('recibos', true)">
-                                            <i class="fas fa-check"></i> Validar
-                                        </button>
-                                        <button class="btn btn-danger btn-sm" onclick="validarDocumento('recibos', false)">
-                                            <i class="fas fa-times"></i> Rechazar
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="card mb-2">
-                                <div class="card-body">
-                                    <h5><i class="fas fa-chart-line"></i> Historial Crediticio</h5>
-                                    <p>Reporte de centrales de riesgo</p>
-                                    <div class="d-flex gap-1">
-                                        <button class="btn btn-primary btn-sm" onclick="verDocumento('historial')">
-                                            <i class="fas fa-eye"></i> Ver
-                                        </button>
-                                        <button class="btn btn-success btn-sm" onclick="validarDocumento('historial', true)">
-                                            <i class="fas fa-check"></i> Validar
-                                        </button>
-                                        <button class="btn btn-danger btn-sm" onclick="validarDocumento('historial', false)">
-                                            <i class="fas fa-times"></i> Rechazar
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="text-center mt-3">
-                                <button class="btn btn-primary btn-lg" onclick="finalizarValidacion()">
-                                    <i class="fas fa-arrow-right"></i> Proceder a Scoring
-                                </button>
+                            <div id="docsAValidar">
+                                <!-- Aquí se insertan los documentos dinámicamente -->
                             </div>
                         </div>
                     </div>
@@ -483,29 +445,9 @@
     </div>
 
     <script src="script.js"></script>
+    <script src="evaluador.js"></script>
     <script>
         // Funciones específicas del panel de evaluación
-        
-        function iniciarEvaluacion(id) {
-            showNotification(`Iniciando evaluación de solicitud ${id}`, 'info');
-            showSection('validacion');
-        }
-        
-        function continuarEvaluacion(id) {
-            showNotification(`Continuando evaluación de solicitud ${id}`, 'info');
-            showSection('scoring');
-        }
-        
-        function validarDocumento(tipo, valido) {
-            const mensaje = valido ? `Documento ${tipo} validado` : `Documento ${tipo} rechazado`;
-            const tipoNotif = valido ? 'success' : 'error';
-            showNotification(mensaje, tipoNotif);
-        }
-        
-        function finalizarValidacion() {
-            showNotification('Documentos validados. Procediendo al cálculo de score...', 'success');
-            showSection('scoring');
-        }
         
         function updateScoring() {
             // Actualizar valores de ponderación
@@ -524,41 +466,6 @@
             
             // Recalcular score
             calcularScoreRealTime();
-        }
-        
-        function calcularScoreRealTime() {
-            // Obtener puntajes base
-            const historialPts = 85;
-            const ingresosPts = 90;
-            const activosPts = 75;
-            const comportamientoPts = 80;
-            
-            // Obtener pesos
-            const pesoHist = document.getElementById('pesoHistorial').value / 100;
-            const pesoIng = document.getElementById('pesoIngresos').value / 100;
-            const pesoAct = document.getElementById('pesoActivos').value / 100;
-            const pesoComp = document.getElementById('pesoComportamiento').value / 100;
-            
-            // Calcular score final
-            const scoreFinal = Math.round(
-                (historialPts * pesoHist) +
-                (ingresosPts * pesoIng) +
-                (activosPts * pesoAct) +
-                (comportamientoPts * pesoComp)
-            );
-            
-            // Actualizar interfaz
-            document.getElementById('scoreCalculado').textContent = scoreFinal;
-            document.getElementById('barraScore').style.width = scoreFinal + '%';
-            
-            // Actualizar clasificación
-            let clasificacion = '';
-            if (scoreFinal >= 80) clasificacion = 'Excelente';
-            else if (scoreFinal >= 70) clasificacion = 'Bueno';
-            else if (scoreFinal >= 60) clasificacion = 'Regular';
-            else clasificacion = 'Deficiente';
-            
-            document.getElementById('clasificacionScore').textContent = clasificacion;
         }
         
         function aprobarAutomatico() {
@@ -600,31 +507,11 @@
             showNotification(`Abriendo documento: ${tipo}`, 'info');
         }
         
-        // Función showSection personalizada para esta página
-        function showSection(sectionName) {
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            
-            document.querySelectorAll('.content-section').forEach(section => {
-                section.classList.remove('active');
-            });
-            
-            const targetSection = document.getElementById(sectionName);
-            if (targetSection) {
-                targetSection.classList.add('active');
-                targetSection.classList.add('fade-in');
-            }
-        }
-        
         // Inicializar scoring cuando se carga
         document.addEventListener('DOMContentLoaded', function() {
             loadUserData();
-            calcularScoreRealTime();
+           
         });
-    </script>
-    <script>
     </script>
 </body>
 </html>

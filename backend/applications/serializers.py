@@ -27,7 +27,9 @@ class ApplicationSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'client', 'client_username', 'client_email', 'amount', 'term_months', 'purpose',
             'status', 'application_date', 'last_updated', 'credit_score',
-            'evaluator_comments', 'documents'
+            'evaluator_comments', 'documents',
+            # NUEVOS CAMPOS
+            'historial_crediticio', 'ingresos', 'activos', 'comportamiento'
         ]
         read_only_fields = ['client', 'status', 'application_date', 'last_updated', 'credit_score', 'evaluator_comments', 'documents']
 
@@ -39,7 +41,9 @@ class ApplicationUpdateSerializer(serializers.ModelSerializer):
     # Serializer para permitir a evaluadores/admins actualizar ciertos campos
     class Meta:
         model = Application
-        fields = ['status', 'credit_score', 'evaluator_comments']
+        fields = ['status', 'credit_score', 'evaluator_comments',
+                  # NUEVOS CAMPOS
+                  'historial_crediticio', 'ingresos', 'activos', 'comportamiento']
 
 class PolicyConfigSerializer(serializers.ModelSerializer):
     class Meta:
