@@ -130,8 +130,16 @@
     </div>
     <script src="script.js"></script>
     <script>
-    // --- Lógica de perfil ---
     document.addEventListener('DOMContentLoaded', function() {
+        const userLoaded = window.loadUserData ? window.loadUserData() : false;
+        if (!userLoaded || !window.currentUser || !window.currentUser.access_token) {
+            if (window.showNotification) window.showNotification('Sesión expirada. Redirigiendo al login...', 'error');
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 1200);
+            return;
+        }
+        // --- Lógica de perfil ---
         cargarDatosPerfilSeguro();
         const avatar = document.getElementById('profileAvatar');
         const avatarInput = document.getElementById('avatarInput');

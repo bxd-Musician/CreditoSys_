@@ -225,5 +225,11 @@
     </div>
 
     <script src="script.js"></script>
+    <script>
+        // Asegura que los listeners estén activos para el login
+        if (typeof setupEventListeners === 'function') {
+            setupEventListeners();
+        }
+    </script>
 </body>
 </html>

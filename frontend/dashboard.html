@@ -527,20 +527,16 @@
             }
         }
 
-        // Inicializar cuando se carga la página
-        window.addEventListener('load', function() {
-            loadUserData();
-            const dashboardTab = document.querySelector('[onclick="irADashboard()"]');
-            if (dashboardTab) {
-                dashboardTab.classList.add('active');
-            }
-            updateUserInterface();
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicialización global del dashboard
+            if (window.updateUserInterface) window.updateUserInterface();
+            if (window.cargarDashboardDatos) window.cargarDashboardDatos();
             // Enganchar el event listener del avatar solo una vez
             const userAvatar = document.getElementById('userAvatar');
             if (userAvatar && !userAvatar.dataset.listenerAttached) {
                 userAvatar.style.cursor = 'pointer';
                 userAvatar.addEventListener('click', function() {
-                    abrirModalPerfil();
+                    if (window.abrirModalPerfil) window.abrirModalPerfil();
                 });
                 userAvatar.dataset.listenerAttached = 'true';
             }

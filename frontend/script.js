@@ -84,33 +84,28 @@ function loadUserData() {
         if (currentUserStr) {
             let parsedUser = JSON.parse(currentUserStr);
 
-            // Normalizar: si tiene type pero no role, asignar SOLO si no es admin ni evaluador
+            // Normalizar: si tiene type pero no role, asignar SIEMPRE
             if (parsedUser && !parsedUser.role && parsedUser.type) {
-                // Solo asignar si el type no es admin ni evaluador
-                if (parsedUser.type !== 'admin' && parsedUser.type !== 'evaluador') {
-                    parsedUser.role = parsedUser.type;
-                }
+                parsedUser.role = parsedUser.type;
             }
-
-            // Si el usuario ya tiene role, no modificarlo
-            // Si el usuario tiene role admin o evaluador, no modificar nada
-            // Si el usuario tiene role undefined y type, asignar solo si no es admin/evaluador
+            // Si no tiene role ni type, asignar por username si es conocido
+            if (parsedUser && !parsedUser.role) {
+                if (parsedUser.username === 'admin') parsedUser.role = 'admin';
+                else if (parsedUser.username === 'evaluador') parsedUser.role = 'evaluador';
+                else if (parsedUser.username) parsedUser.role = 'cliente';
+            }
 
             parsedUser = normalizarUsuario(parsedUser); // Refuerza la normalización
 
             console.log('Usuario parseado:', parsedUser);
             
-            if (parsedUser && parsedUser.username && parsedUser.role && parsedUser.access_token) {
+            // Permitir acceso si tiene username y access_token, aunque falte role
+            if (parsedUser && parsedUser.username && parsedUser.access_token) {
                 currentUser = parsedUser;
                 console.log('Usuario cargado exitosamente:', currentUser);
                 return true;
             } else {
                 console.warn('Usuario incompleto o sin token, limpiando datos');
-                console.warn('Campos faltantes:', {
-                    username: !!parsedUser?.username,
-                    role: !!parsedUser?.role,
-                    access_token: !!parsedUser?.access_token
-                });
                 localStorage.removeItem('currentUser');
                 currentUser = null;
                 return false;
@@ -1319,63 +1314,77 @@ async function attemptTokenRefresh() {
 let solicitudesData = [];
 let paginaActual = 1;
 const solicitudesPorPagina = 5;
+let totalSolicitudesBackend = 0; // <-- Nuevo: total real del backend
 
+// --- PAGINACIÓN SOLICITUDES PARA solicitudes.html ---
+function renderPaginacionSolicitudesHTML() {
+    const paginacionDiv = document.getElementById('paginacionSolicitudes');
+    if (!paginacionDiv) return;
+    const total = totalSolicitudesBackend;
+    const inicio = total === 0 ? 0 : (paginaActual - 1) * solicitudesPorPagina + 1;
+    const fin = Math.min(paginaActual * solicitudesPorPagina, total);
+
+    let html = `
+        <div>
+            <span>Mostrando <b>${inicio}</b> - <b>${fin}</b> de <b>${total}</b> solicitudes</span>
+        </div>
+        <div class="d-flex gap-1">
+            <button class="btn btn-outline btn-sm" ${paginaActual === 1 ? 'disabled' : ''} onclick="cambiarPaginaSolicitudes(${paginaActual - 1})">
+                <i class="fas fa-chevron-left"></i> Anterior
+            </button>
+    `;
+    let totalPaginas = Math.ceil(total / solicitudesPorPagina);
+    for (let i = 1; i <= totalPaginas; i++) {
+        html += `<button class="btn ${i === paginaActual ? 'btn-primary' : 'btn-outline'} btn-sm" onclick="cambiarPaginaSolicitudes(${i})">${i}</button>`;
+    }
+    html += `
+            <button class="btn btn-outline btn-sm" ${paginaActual === totalPaginas || totalPaginas === 0 ? 'disabled' : ''} onclick="cambiarPaginaSolicitudes(${paginaActual + 1})">
+                Siguiente <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    `;
+    paginacionDiv.innerHTML = html;
+}
+
+// Modifica renderSolicitudesPaginadas para llamar a la nueva función
 function renderSolicitudesPaginadas() {
     const tablaBody = document.getElementById('solicitudesTableBody');
     if (!tablaBody) return;
     tablaBody.innerHTML = '';
     if (solicitudesData.length === 0) {
-        tablaBody.innerHTML = '<tr><td colspan="6" class="text-center">No tienes solicitudes de crédito.</td></tr>';
+        tablaBody.innerHTML = '<tr><td colspan="9" class="text-center">No tienes solicitudes de crédito.</td></tr>';
     } else {
-        const inicio = (paginaActual - 1) * solicitudesPorPagina;
-        const fin = Math.min(inicio + solicitudesPorPagina, solicitudesData.length);
-        for (let i = inicio; i < fin; i++) {
-            const solicitud = solicitudesData[i];
+        for (let solicitud of solicitudesData) {
             const fila = `
                 <tr>
                     <td>${solicitud.id}</td>
+                    <td>${solicitud.client_username || ''}</td>
+                    <td>${new Date(solicitud.application_date).toLocaleDateString()}</td>
                     <td>S/ ${Number(solicitud.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                     <td>${solicitud.term_months} meses</td>
+                    <td>${solicitud.purpose || ''}</td>
                     <td><span class="status ${solicitud.status}">${solicitud.status}</span></td>
-                    <td>${new Date(solicitud.application_date).toLocaleDateString()}</td>
-                    <td><button class="btn btn-sm btn-info" onclick="verDetalle('${solicitud.id}')">Ver</button></td>
+                    <td>${solicitud.credit_score || '-'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-info" onclick="verDetalle('${solicitud.id}')"><i class='fas fa-eye'></i></button>
+                        <button class="btn btn-sm btn-danger" title="Eliminar" onclick="eliminarSolicitud('${solicitud.id}')"><i class="fas fa-trash"></i></button>
+                    </td>
                 </tr>
             `;
             tablaBody.innerHTML += fila;
         }
     }
-    // No llamar a renderPaginacionSolicitudes en el dashboard
-}
-
-function renderPaginacionSolicitudes() {
-    const paginacionDiv = document.querySelector('.d-flex.justify-between.align-center.mt-3');
-    if (!paginacionDiv) return;
-    const total = solicitudesData.length;
-    const inicio = total === 0 ? 0 : (paginaActual - 1) * solicitudesPorPagina + 1;
-    const fin = Math.min(paginaActual * solicitudesPorPagina, total);
-    // Texto dinámico
-    paginacionDiv.children[0].innerHTML = `<span>Mostrando ${inicio}-${fin} de ${total} solicitudes</span>`;
-    // Botones
-    let totalPaginas = Math.ceil(total / solicitudesPorPagina);
-    let paginacionHTML = '';
-    paginacionHTML += `<button class="btn btn-outline btn-sm" ${paginaActual === 1 ? 'disabled' : ''} onclick="cambiarPaginaSolicitudes(${paginaActual - 1})"><i class="fas fa-chevron-left"></i> Anterior</button>`;
-    for (let i = 1; i <= totalPaginas; i++) {
-        paginacionHTML += `<button class="btn ${i === paginaActual ? 'btn-primary' : 'btn-outline'} btn-sm" onclick="cambiarPaginaSolicitudes(${i})">${i}</button>`;
-    }
-    paginacionHTML += `<button class="btn btn-outline btn-sm" ${paginaActual === totalPaginas || totalPaginas === 0 ? 'disabled' : ''} onclick="cambiarPaginaSolicitudes(${paginaActual + 1})">Siguiente <i class="fas fa-chevron-right"></i></button>`;
-    paginacionDiv.children[1].innerHTML = paginacionHTML;
+    renderPaginacionSolicitudesHTML();
 }
 
 function cambiarPaginaSolicitudes(nuevaPagina) {
-    const totalPaginas = Math.ceil(solicitudesData.length / solicitudesPorPagina);
+    const totalPaginas = Math.ceil(totalSolicitudesBackend / solicitudesPorPagina);
     if (nuevaPagina < 1 || nuevaPagina > totalPaginas) return;
     paginaActual = nuevaPagina;
-    renderSolicitudesPaginadas();
+    cargarSolicitudesCliente(); // Recarga desde el backend
 }
 
-// --- MODIFICAR CARGA DE SOLICITUDES ---
 async function cargarSolicitudesCliente() {
-    // Solo ejecutar si estamos en solicitudes.html
     if (!window.location.pathname.includes('solicitudes.html')) return;
     showLoading();
     const tablaBody = document.getElementById('solicitudesTableBody');
@@ -1386,14 +1395,22 @@ async function cargarSolicitudesCliente() {
     }
     tablaBody.innerHTML = '<tr><td colspan="9" class="text-center">Cargando solicitudes...</td></tr>';
     try {
-        const response = await fetchAuthenticated(`${API_BASE_URL}applications/`);
-        if (!response.ok) {
+        const response = await fetchAuthenticated(`${API_BASE_URL}applications/?page=${paginaActual}&page_size=${solicitudesPorPagina}`, {});
+        let data = [];
+        let total = 0;
+        if (Array.isArray(response)) {
+            // El backend devuelve un array plano
+            data = response;
+            total = response.length;
+        } else if (response && Array.isArray(response.results)) {
+            // El backend devuelve paginado
+            data = response.results;
+            total = response.count || data.length;
+        } else {
             throw new Error('Error al cargar las solicitudes. Inténtalo de nuevo.');
         }
-        const data = await response.json();
-        updateSolicitudStats(data);
-        solicitudesData = data.sort((a, b) => new Date(b.application_date) - new Date(a.application_date));
-        paginaActual = 1;
+        solicitudesData = data;
+        totalSolicitudesBackend = total;
         renderSolicitudesPaginadas();
     } catch (error) {
         console.error('Error al cargar las solicitudes:', error);
@@ -1425,63 +1442,44 @@ function updateSolicitudStats(solicitudes) {
  * @param {string} id - ID de la solicitud.
  */
 function verDetalle(id) {
-    localStorage.setItem('currentApplicationId', id);
-    window.location.href = 'solicitudes.html';
+    cargarDetalleSolicitud(id);
 }
 
-// ===== FUNCIONES PARA GESTIÓN DE DOCUMENTOS =====
-
-/**
- * Carga las solicitudes del usuario en el selector de documentos
- */
-async function cargarSolicitudesDocumentos() {
-    console.log('Iniciando carga de solicitudes para documentos...');
-    const selectSolicitud = document.getElementById('solicitudDocumentos');
-    if (!selectSolicitud) {
-        console.error('No se encontró el selector de solicitudes');
-        return;
-    }
-
-    console.log('Verificando autenticación...');
-    if (!currentUser || !currentUser.access_token) {
-        console.error('Usuario no autenticado');
-        showNotification('Sesión expirada. Por favor, inicia sesión de nuevo.', 'error');
-        return;
-    }
-
+async function cargarDetalleSolicitud(id) {
+    showLoading();
     try {
-        console.log('Haciendo petición a:', `${API_BASE_URL}applications/`);
-        const solicitudes = await fetchAuthenticated(`${API_BASE_URL}applications/`);
-        console.log('Solicitudes recibidas:', solicitudes);
-        // Limpiar opciones existentes
-        selectSolicitud.innerHTML = '<option value="">Selecciona una solicitud...</option>';
-        // Agregar solicitudes al selector
-        solicitudes.forEach(solicitud => {
-            const option = document.createElement('option');
-            option.value = solicitud.id;
-            option.textContent = `Solicitud #${solicitud.id} - S/ ${solicitud.amount.toLocaleString()} (${solicitud.status})`;
-            selectSolicitud.appendChild(option);
-        });
-        console.log(`Se agregaron ${solicitudes.length} solicitudes al selector`);
-        // Evento para cargar documentos al cambiar la solicitud
-        selectSolicitud.onchange = function() {
-            const solicitudId = this.value;
-            console.log('Solicitud seleccionada:', solicitudId);
-            if (solicitudId) {
-                cargarDocumentosSolicitud(solicitudId);
-            } else {
-                limpiarTablaDocumentos();
-            }
-        };
-        // Si hay una solicitud seleccionada por defecto, cargar sus documentos
-        if (selectSolicitud.value) {
-            cargarDocumentosSolicitud(selectSolicitud.value);
+        const response = await fetchAuthenticated(`${API_BASE_URL}applications/${id}/`, {});
+        // Construir HTML para archivos subidos
+        let archivosHTML = '';
+        if (response.documents && Array.isArray(response.documents) && response.documents.length > 0) {
+            archivosHTML = '<h4>Archivos Subidos</h4><ul>';
+            response.documents.forEach(doc => {
+                archivosHTML += `<li><strong>${doc.document_type}:</strong> <a href="${doc.file}" target="_blank">Ver archivo</a></li>`;
+            });
+            archivosHTML += '</ul>';
         } else {
-            limpiarTablaDocumentos();
+            archivosHTML = '<div class="text-muted">No hay archivos subidos para esta solicitud.</div>';
         }
+        // Llena el modal con los datos de la solicitud y los archivos
+        document.getElementById('contenidoDetalle').innerHTML = `
+            <div>
+                <strong>ID:</strong> ${response.id}<br>
+                <strong>Cliente:</strong> ${response.client_username || ''}<br>
+                <strong>Monto:</strong> S/ ${Number(response.amount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}<br>
+                <strong>Plazo:</strong> ${response.term_months} meses<br>
+                <strong>Propósito:</strong> ${response.purpose || ''}<br>
+                <strong>Estado:</strong> ${response.status}<br>
+                <strong>Score:</strong> ${response.credit_score || '-'}<br>
+                <strong>Fecha:</strong> ${new Date(response.application_date).toLocaleDateString()}<br>
+                <hr>
+                ${archivosHTML}
+            </div>
+        `;
+        document.getElementById('detalleModal').classList.add('active');
     } catch (error) {
-        console.error('Error al cargar solicitudes para documentos:', error);
-        showNotification('Error al cargar las solicitudes', 'error');
+        showNotification('Error al cargar el detalle de la solicitud', 'error');
+    } finally {
+        hideLoading();
     }
 }
 
@@ -1625,11 +1623,21 @@ function setupFileUpload() {
  * @param {File} file - Archivo a subir
  * @param {string} solicitudId - ID de la solicitud
  */
-async function subirDocumento(file, solicitudId) {
+async function subirDocumento(file, solicitudId, tipo = null) {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('document_type', file.name.split('.').pop().toUpperCase());
-    formData.append('application', solicitudId);
+    formData.append('document_type', tipo ? tipo : file.name.split('.').pop().toLowerCase()); // Usar minúsculas
+    // NO agregar 'application' al FormData
+
+    // LOG de depuración: mostrar el contenido del FormData
+    console.log('--- DEPURACIÓN SUBIDA DE DOCUMENTO ---');
+    for (let pair of formData.entries()) {
+        console.log('FormData:', pair[0], pair[1]);
+    }
+    console.log('SolicitudId:', solicitudId);
+    console.log('Tipo:', tipo);
+    console.log('Endpoint:', `${API_BASE_URL}applications/${solicitudId}/documents/upload/`);
+    // ---
 
     const response = await fetchAuthenticated(`${API_BASE_URL}applications/${solicitudId}/documents/upload/`, {
         method: 'POST',
@@ -1639,12 +1647,81 @@ async function subirDocumento(file, solicitudId) {
         }
     });
 
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Error al subir el documento');
+    // LOG de depuración: mostrar la respuesta del backend
+    console.log('Respuesta JSON del backend:', response);
+    if (response && response.detail) {
+        // Si el backend devolvió un error
+        throw new Error(response.detail || 'Error al subir el documento');
+    }
+    return response;
+}
+
+async function cargarSolicitudesDocumentos() {
+    const select = document.getElementById('solicitudDocumentos');
+    if (!select) return;
+
+    select.innerHTML = '';
+
+    // Obtén el usuario actual
+    const user = window.currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}');
+    if (!user || !user.access_token) return;
+
+    try {
+        // URL correcta según el backend
+        const response = await fetch('/api/applications/', {
+            headers: {
+                'Authorization': `Bearer ${user.access_token}`
+            }
+        });
+        if (!response.ok) throw new Error('Error al obtener solicitudes');
+        const solicitudes = await response.json();
+
+        // Si la respuesta es paginada (tiene results), usar results
+        const lista = Array.isArray(solicitudes) ? solicitudes : (solicitudes.results || []);
+
+        lista.forEach(solicitud => {
+            const option = document.createElement('option');
+            option.value = solicitud.id;
+            option.textContent = `Solicitud #${solicitud.id} - ${solicitud.status || ''}`;
+            select.appendChild(option);
+        });
+
+        if (lista.length === 0) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No tienes solicitudes';
+            select.appendChild(option);
+        }
+
+        // Si hay al menos una solicitud, carga los documentos de la primera por defecto
+        if (lista.length > 0) {
+            cargarDocumentosSolicitud(lista[0].id);
+            select.value = lista[0].id;
+        } else {
+            // Si no hay solicitudes, limpia la tabla de documentos
+            const tablaBody = document.getElementById('documentosTableBody');
+            if (tablaBody) tablaBody.innerHTML = '';
+        }
+    } catch (e) {
+        console.error('Error cargando solicitudes:', e);
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'Error al cargar solicitudes';
+        select.appendChild(option);
+        // Limpia la tabla de documentos
+        const tablaBody = document.getElementById('documentosTableBody');
+        if (tablaBody) tablaBody.innerHTML = '';
     }
 
-    return await response.json();
+    // Agrega el event listener para cambiar de solicitud y cargar documentos
+    select.onchange = function() {
+        if (select.value) {
+            cargarDocumentosSolicitud(select.value);
+        } else {
+            const tablaBody = document.getElementById('documentosTableBody');
+            if (tablaBody) tablaBody.innerHTML = '';
+        }
+    };
 }
 
 /**
@@ -3215,8 +3292,8 @@ async function verificarToken() {
     }
     
     try {
-        // Usar endpoint accesible a todos los roles
-        const response = await fetch('/api/applications/user-stats/', {
+        // Cambia el endpoint a uno accesible para todos los roles
+        const response = await fetch('/api/applications/', {
             headers: {
                 'Authorization': `Bearer ${currentUser.access_token}`,
                 'Content-Type': 'application/json'
@@ -3789,29 +3866,44 @@ function abrirSubidaDocumento(solicitudId, tipo, esMultiple = false, maxArchivos
     input.click();
 }
 
-// Modificar subirDocumento para aceptar tipo opcional
-async function subirDocumento(file, solicitudId, tipo = null) {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('document_type', tipo ? tipo : file.name.split('.').pop().toLowerCase()); // Usar minúsculas
-    // NO agregar 'application' al FormData
-
-    const response = await fetchAuthenticated(`${API_BASE_URL}applications/${solicitudId}/documents/upload/`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            // No incluir Content-Type para FormData
-        }
-    });
-
-    if (!response.ok) {
-        let errorMsg = 'Error al subir el documento';
-        try {
-            const errorData = await response.json();
-            errorMsg = errorData.detail || JSON.stringify(errorData) || errorMsg;
-        } catch (e) {}
-        throw new Error(errorMsg);
+// --- EXPORTAR SOLICITUDES A EXCEL (CSV) ---
+function exportarExcel() {
+    if (!solicitudesData || solicitudesData.length === 0) {
+        showNotification('No hay solicitudes para exportar.', 'info');
+        return;
     }
+    let csv = 'ID,Cliente,Fecha,Monto,Plazo,Propósito,Estado,Score\n';
+    solicitudesData.forEach(s => {
+        csv += `${s.id},${s.client_username || ''},${new Date(s.application_date).toLocaleDateString()},${s.amount},${s.term_months},${s.purpose || ''},${s.status},${s.credit_score || ''}\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `solicitudes_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showNotification('Solicitudes exportadas a Excel (CSV)', 'success');
+}
 
-    return await response.json();
+// --- ELIMINAR SOLICITUD ---
+async function eliminarSolicitud(id) {
+    if (!confirm('¿Estás seguro de que deseas eliminar esta solicitud? Esta acción no se puede deshacer.')) return;
+    showLoading();
+    try {
+        const response = await fetchAuthenticated(`${API_BASE_URL}applications/${id}/`, { method: 'DELETE' });
+        if (response && response.detail) {
+            throw new Error(response.detail);
+        }
+        showNotification('Solicitud eliminada exitosamente.', 'success');
+        cargarSolicitudesCliente();
+    } catch (error) {
+        showNotification('Error al eliminar la solicitud: ' + (error.message || error), 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+function actualizarSolicitudes() {
+    cargarSolicitudesCliente();
 }

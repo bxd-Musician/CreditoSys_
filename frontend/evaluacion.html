@@ -619,22 +619,12 @@
         }
         
         // Inicializar scoring cuando se carga
-        window.addEventListener('load', function() {
+        document.addEventListener('DOMContentLoaded', function() {
             loadUserData();
             calcularScoreRealTime();
         });
     </script>
     <script>
-        window.addEventListener('DOMContentLoaded', function() {
-            try {
-                const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                if (!user || user.role !== 'evaluador') {
-                    window.location.href = 'login.html';
-                }
-            } catch (e) {
-                window.location.href = 'login.html';
-            }
-        });
     </script>
 </body>
 </html>

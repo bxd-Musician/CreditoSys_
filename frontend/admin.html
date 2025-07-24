@@ -890,7 +890,15 @@
         }
         
         // Inicializar cuando se carga la página
-        window.addEventListener('load', function() {
+        document.addEventListener('DOMContentLoaded', function() {
+            const userLoaded = window.loadUserData ? window.loadUserData() : false;
+            if (!userLoaded || !window.currentUser || !window.currentUser.access_token) {
+                if (window.showNotification) window.showNotification('Sesión expirada. Redirigiendo al login...', 'error');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 1200);
+                return;
+            }
             loadUserData();
             updatePonderacionesAdmin();
         });
