@@ -8,3 +8,4 @@ django-filter==25.1
 psutil==7.0.0
 requests==2.31.0
 gunicorn==23.0.0
+Faker==25.2.0

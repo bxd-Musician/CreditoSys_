@@ -307,51 +307,55 @@ class PolicyConfigView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+# REEMPLAZA ESTE MÉTODO COMPLETO en tu archivo backend/applications/views.py
+
 class EvaluatorStatsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         user = request.user
-        if not hasattr(user, 'role') or user.role != 'evaluador':
-            return Response({'error': 'Solo evaluadores pueden acceder a estas estadísticas.'}, status=403)
+        if not hasattr(user, 'role') or user.role not in ['evaluador', 'admin']:
+            return Response({'error': 'No tiene permisos para ver estas estadísticas.'}, status=403)
 
         now = timezone.now()
-        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        today = now.date()
 
-        # Solicitudes pendientes (no evaluadas)
+        # CORRECTO: Cuenta todas las solicitudes pendientes, sin importar el evaluador.
         pendientes = Application.objects.filter(status__in=['pendiente', 'en_revision']).count()
 
-        # Solicitudes evaluadas hoy por este evaluador
+        # CORRECTO: Cuenta TODAS las solicitudes finalizadas (aprobadas/rechazadas) en el día de hoy,
+        # sin importar qué evaluador lo hizo.
         evaluadas_hoy = Application.objects.filter(
-            evaluated_by=user,
-            evaluated_at__gte=today_start
-        ).count() if hasattr(Application, 'evaluated_by') and hasattr(Application, 'evaluated_at') else 0
+            evaluated_at__date=today,
+            status__in=['aprobada', 'rechazada']
+        ).count()
 
-        # Total evaluadas por este evaluador
-        total_evaluadas = Application.objects.filter(evaluated_by=user).count() if hasattr(Application, 'evaluated_by') else 0
-        aprobadas = Application.objects.filter(evaluated_by=user, status='aprobada').count() if hasattr(Application, 'evaluated_by') else 0
+        # CORRECTO: Calcula la tasa de aprobación sobre TODAS las solicitudes finalizadas.
+        total_evaluadas = Application.objects.filter(status__in=['aprobada', 'rechazada']).count()
+        aprobadas = Application.objects.filter(status='aprobada').count()
         tasa_aprobacion = (aprobadas / total_evaluadas * 100) if total_evaluadas > 0 else 0
 
-        # Evaluadas este mes
-        evaluadas_mes = Application.objects.filter(
-            evaluated_by=user,
-            evaluated_at__gte=month_start
-        ).count() if hasattr(Application, 'evaluated_by') and hasattr(Application, 'evaluated_at') else 0
-
-        # Tiempo promedio de evaluación (en minutos)
-        if hasattr(Application, 'evaluated_at') and hasattr(Application, 'last_updated'):
-            tiempos = Application.objects.filter(evaluated_by=user).exclude(evaluated_at=None, last_updated=None).values_list('last_updated', 'evaluated_at')
-            tiempos_min = [abs((l - e).total_seconds())/60 for l, e in tiempos if l and e]
-            tiempo_promedio = sum(tiempos_min)/len(tiempos_min) if tiempos_min else 0
-        else:
-            tiempo_promedio = 0
+        # Mantenemos tu lógica de tiempo promedio si existe
+        tiempo_promedio = 0
+        if hasattr(Application, 'application_date') and hasattr(Application, 'evaluated_at'):
+             evaluadas_con_tiempo = Application.objects.filter(
+                status__in=['aprobada', 'rechazada'], 
+                evaluated_at__isnull=False
+            ).annotate(
+                processing_time=models.ExpressionWrapper(
+                    models.F('evaluated_at') - models.F('application_date'), 
+                    output_field=models.DurationField()
+                )
+            )
+             
+             avg_duration = evaluadas_con_tiempo.aggregate(avg_time=Avg('processing_time'))['avg_time']
+             if avg_duration:
+                 tiempo_promedio = avg_duration.total_seconds() / 60 # Convertir a minutos
 
         return Response({
             'pendientes': pendientes,
             'evaluadas_hoy': evaluadas_hoy,
             'tasa_aprobacion': round(tasa_aprobacion, 2),
             'tiempo_promedio': round(tiempo_promedio, 2),
-            'evaluadas_mes': evaluadas_mes,
-            'aprobaciones': aprobadas
+            'aprobaciones': aprobadas # Dato útil para la pestaña de reportes
         })

@@ -7,299 +7,170 @@
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="styles.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/  chart.js"></script>
+    
+</head>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div class="loading" id="loadingScreen">
-        <div class="spinner"></div>
-    </div>
-
-    <!-- Notification -->
-    <div class="notification" id="notification">
-        <span id="notificationText"></span>
-    </div>
+    <div class="loading" id="loadingScreen"><div class="spinner"></div></div>
+    <div class="notification" id="notification"><span id="notificationText"></span></div>
 
     <div class="container">
-        <!-- Header -->
         <header class="header">
             <div class="logo">
                 <i class="fas fa-university"></i>
-                <div>
-                    <h1>CreditoSys</h1>
-                    <small>Panel de Evaluación</small>
-                </div>
+                <div><h1>CreditoSys</h1><small>Panel de Evaluación</small></div>
             </div>
             <div class="user-info">
-                <div>
-                    <strong id="userName">Cargando...</strong>
-                    <br>
-                    <small id="userRole">Evaluador</small>
-                </div>
+                <div><strong id="userName">Cargando...</strong><br><small id="userRole">Evaluador</small></div>
                 <div class="user-avatar" id="userAvatar">E</div>
                 <div class="d-flex gap-1">
-                    <a href="dashboard.html" class="btn btn-outline btn-sm">
-                        <i class="fas fa-home"></i> Dashboard
-                    </a>
-                    <button class="btn btn-secondary btn-sm" onclick="logout()">
-                        <i class="fas fa-sign-out-alt"></i> Salir
-                    </button>
+                    <a href="dashboard.html" class="btn btn-outline btn-sm"><i class="fas fa-home"></i> Dashboard</a>
+                    <button class="btn btn-secondary btn-sm" id="btnLogout"><i class="fas fa-sign-out-alt"></i> Salir</button>
                 </div>
             </div>
         </header>
 
-        <!-- Navigation Tabs -->
         <nav class="nav-tabs">
-            <button class="nav-tab active" onclick="showSection('pendientes')">
-                <i class="fas fa-clock"></i> Pendientes
-            </button>
-            <button class="nav-tab" onclick="showSection('validacion')">
-                <i class="fas fa-check-circle"></i> Validación
-            </button>
-            <button class="nav-tab" onclick="showSection('scoring')">
-                <i class="fas fa-calculator"></i> Scoring
-            </button>
-            <button class="nav-tab" onclick="showSection('revision')">
-                <i class="fas fa-search"></i> Revisión Manual
-            </button>
-            <button class="nav-tab" onclick="showSection('reportes')">
-                <i class="fas fa-chart-bar"></i> Reportes
-            </button>
+            <button class="nav-tab active" data-section="pendientes"><i class="fas fa-clock"></i> Pendientes</button>
+            <button class="nav-tab" data-section="validacion"><i class="fas fa-check-circle"></i> Validación</button>
+            <button class="nav-tab" data-section="scoring"><i class="fas fa-calculator"></i> Scoring</button>
+            <button class="nav-tab" data-section="revision"><i class="fas fa-search"></i> Revisión Manual</button>
+            <button class="nav-tab" data-section="reportes"><i class="fas fa-chart-bar"></i> Reportes</button>
         </nav>
 
-        <!-- Estadísticas del Evaluador -->
         <div class="dashboard-grid">
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-hourglass-half"></i>
-                </div>
-                <div class="stat-number">12</div>
-                <div class="stat-label">Pendientes</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-check"></i>
-                </div>
-                <div class="stat-number">8</div>
-                <div class="stat-label">Evaluadas Hoy</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-percentage"></i>
-                </div>
-                <div class="stat-number">75%</div>
-                <div class="stat-label">Tasa Aprobación</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-clock"></i>
-                </div>
-                <div class="stat-number">15 min</div>
-                <div class="stat-label">Tiempo Promedio</div>
-            </div>
+            <div class="stat-card"><div class="stat-icon"><i class="fas fa-hourglass-half"></i></div><div class="stat-number" id="stat-pendientes">-</div><div class="stat-label">Pendientes</div></div>
+            <div class="stat-card"><div class="stat-icon"><i class="fas fa-check"></i></div><div class="stat-number" id="stat-evaluadas">-</div><div class="stat-label">Evaluadas Hoy</div></div>
+            <div class="stat-card"><div class="stat-icon"><i class="fas fa-percentage"></i></div><div class="stat-number" id="stat-tasa">-</div><div class="stat-label">Tasa Aprobación</div></div>
+            <div class="stat-card"><div class="stat-icon"><i class="fas fa-clock"></i></div><div class="stat-number" id="stat-tiempo">-</div><div class="stat-label">Tiempo Promedio</div></div>
         </div>
 
-        <!-- Sección Pendientes -->
         <section id="pendientes" class="content-section active">
             <div class="card">
                 <div class="card-header">
-                    <h3><i class="fas fa-list"></i> Solicitudes Pendientes de Evaluación</h3>
-                    <button class="btn btn-primary" onclick="actualizarPendientes()">
-                        <i class="fas fa-sync-alt"></i> Actualizar
-                    </button>
+                    <h3><i class="fas fa-list"></i> Solicitudes Pendientes</h3>
+                    <button class="btn btn-primary" id="btnActualizarPendientes"><i class="fas fa-sync-alt"></i> Actualizar</button>
                 </div>
                 <div class="card-body">
-                    <!-- Barra de búsqueda y paginación -->
                     <div class="d-flex justify-between align-center mb-2">
-                        <input type="text" id="busquedaSolicitudes" class="form-input" placeholder="Buscar por cliente, ID o monto..." style="max-width: 250px;">
+                        <input type="text" id="busquedaSolicitudes" class="form-input" placeholder="Buscar por cliente, ID o monto..." style="max-width: 300px;">
                         <div id="paginacionSolicitudes" class="d-flex align-center gap-1"></div>
-                    </div>
-
-                    <!-- Modal de detalle/evaluación -->
-                    <div class="modal" id="modalDetalleSolicitud" style="display:none;position:fixed;z-index:9999;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.45);justify-content:center;align-items:center;">
-                        <div class="modal-content" style="max-width:600px;width:95%;border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.25);background:#fff;">
-                            <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 10px 24px;">
-                                <h3 style="margin:0;"><i class="fas fa-file-alt"></i> Detalle de Solicitud</h3>
-                                <button class="modal-close" onclick="cerrarModalDetalleSolicitud()" style="background:none;border:none;font-size:1.5em;cursor:pointer;"><i class="fas fa-times"></i></button>
-                            </div>
-                            <div class="modal-body" id="detalleSolicitudBody" style="padding:24px;">
-                                <!-- Aquí se cargan los datos dinámicamente -->
-                            </div>
-                            <div class="modal-footer" style="padding:16px;display:flex;justify-content:flex-end;gap:8px;">
-                                <button class="btn btn-primary" id="btnAprobarSolicitud">Aprobar</button>
-                                <button class="btn btn-danger" id="btnRechazarSolicitud">Rechazar</button>
-                                <button class="btn btn-secondary" onclick="cerrarModalDetalleSolicitud()">Cerrar</button>
-                            </div>
-                        </div>
                     </div>
                     <div class="table-container">
                         <table class="table">
                             <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Cliente</th>
-                                    <th>Monto</th>
-                                    <th>Fecha Solicitud</th>
-                                    <th>Estado</th>
-                                    <th>Prioridad</th>
-                                    <th>Acciones</th>
-                                </tr>
+                                <tr><th>ID</th><th>Cliente</th><th>Monto</th><th>Fecha</th><th>Estado</th><th>Prioridad</th><th>Acciones</th></tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>#004</td>
-                                    <td>Ana Torres</td>
-                                    <td>S/ 50,000</td>
-                                    <td>21/05/2025</td>
-                                    <td><span class="badge status-pendiente">Documentos Subidos</span></td>
-                                    <td><span class="badge" style="background: #ff6b6b; color: white;">Alta</span></td>
-                                    <td>
-                                        <button class="btn btn-primary btn-sm" onclick="iniciarEvaluacion('004')">
-                                            <i class="fas fa-play"></i> Evaluar
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>#005</td>
-                                    <td>Carlos Mendoza</td>
-                                    <td>S/ 25,000</td>
-                                    <td>20/05/2025</td>
-                                    <td><span class="badge status-revision">En Validación</span></td>
-                                    <td><span class="badge" style="background: #ffa726; color: white;">Media</span></td>
-                                    <td>
-                                        <button class="btn btn-success btn-sm" onclick="continuarEvaluacion('005')">
-                                            <i class="fas fa-arrow-right"></i> Continuar
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>#006</td>
-                                    <td>María Fernández</td>
-                                    <td>S/ 15,000</td>
-                                    <td>19/05/2025</td>
-                                    <td><span class="badge status-pendiente">Nueva</span></td>
-                                    <td><span class="badge" style="background: #4caf50; color: white;">Baja</span></td>
-                                    <td>
-                                        <button class="btn btn-primary btn-sm" onclick="iniciarEvaluacion('006')">
-                                            <i class="fas fa-play"></i> Evaluar
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
+                                </tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Sección Validación de Documentos -->
         <section id="validacion" class="content-section">
             <div class="card">
-                <div class="card-header">
-                    <h3><i class="fas fa-file-check"></i> Validación de Documentos - Solicitud <span id="numSolicitudValidacion"></span></h3>
-                </div>
+                <div class="card-header"><h3><i class="fas fa-file-check"></i> Validación y Análisis IA - Solicitud <span id="val-solicitud-id"></span></h3></div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-2">
-                            <h4>Información del Cliente</h4>
-                            <div class="card">
-                                <div class="card-body" id="infoClienteValidacion">
-                                    <!-- Aquí se insertan los datos reales del cliente -->
+                        <div class="col-3">
+                            <h4><i class="fas fa-user-circle"></i> Datos Solicitud</h4>
+                            <div class="card"><div class="card-body" id="val-info-cliente"></div></div>
+                            <h4 class="mt-3"><i class="fas fa-folder-open"></i> Documentos</h4>
+                            <div id="val-documentos-container"></div>
+                        </div>
+                        <div class="col-3">
+                            <h4><i class="fas fa-brain"></i> Análisis de Perfil (IA)</h4>
+                            <div id="panel-perfil-ia" class="card">
+                                <div class="card-body">
+                                    <h2 id="val-perfil-badge" class="text-center mb-2"></h2>
+                                    <div style="position: relative; height: 180px; margin-bottom: 15px;"><canvas id="clusterChart"></canvas></div>
+                                    <p><strong>Score Histórico:</strong> <span id="val-score-hist"></span></p>
+                                    <p><strong>Créditos Anteriores:</strong> <span id="val-creditos-ant"></span></p>
+                                    <div class="card mt-2 alert-info"><div class="card-body"><h5 style="color: var(--primary-color);"><i class="fas fa-lightbulb"></i> Recomendación</h5><p id="val-recomendacion"></p></div></div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-2">
-                            <h4>Documentos a Validar</h4>
-                            <div id="docsAValidar">
-                                <!-- Aquí se insertan los documentos dinámicamente -->
+                        <div class="col-3">
+                            <h4><i class="fas fa-wand-magic-sparkles"></i> Predicción de Riesgo (IA)</h4>
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h5 id="pred-titulo-riesgo">Prob. de Incumplimiento</h5>
+                                    <div class="score-circle" id="pred-circulo-riesgo"><div class="score-text" id="pred-probabilidad"></div></div>
+                                    <h4 id="pred-clasificacion"></h4>
+                                </div>
                             </div>
+                            <h4 class="mt-3"><i class="fas fa-lightbulb"></i> Alertas y Sugerencias (IA)</h4>
+                            <div id="panel-sugerencias-ia"></div>
                         </div>
+                    </div>
+                    <div class="text-center mt-3">
+                        <button class="btn btn-primary btn-lg" id="btnProcederAScoring" onclick="procederAScoring()">
+                            <i class="fas fa-arrow-right"></i> Proceder a Scoring
+                        </button>
+                    </div>
+                    <div class="text-center mt-3">
+                        <button class="btn btn-primary btn-block" onclick="guardarDecisionManual()">
+                            <i class="fas fa-save"></i> Guardar Decisión
+                        </button>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Sección Cálculo de Scoring -->
         <section id="scoring" class="content-section">
             <div class="card">
-                <div class="card-header">
-                    <h3><i class="fas fa-calculator"></i> Cálculo de Score Crediticio - Solicitud #004</h3>
-                </div>
+                <div class="card-header"><h3 id="scoring-header">Cálculo de Score</h3></div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-2">
-                            <!-- Configuración de Ponderaciones según UML -->
                             <div class="card">
-                                <div class="card-header">
-                                    <h4>Ponderaciones (Según UML)</h4>
-                                </div>
+                                <div class="card-header"><h4>Ponderaciones</h4></div>
                                 <div class="card-body">
                                     <div class="form-group">
-                                        <label>Historial Crediticio</label>
-                                        <input type="range" class="form-input" min="0" max="100" value="40" id="pesoHistorial" onchange="updateScoring()">
-                                        <span id="pesoHistorialValue">40%</span>
+                                        <label>Historial Crediticio: <span id="pesoHistorialValue">40%</span></label>
+                                        <input type="range" class="form-input" min="0" max="100" value="40" id="pesoHistorial" oninput="updateScoring()">
                                     </div>
                                     <div class="form-group">
-                                        <label>Ingresos vs Deuda</label>
-                                        <input type="range" class="form-input" min="0" max="100" value="30" id="pesoIngresos" onchange="updateScoring()">
-                                        <span id="pesoIngresosValue">30%</span>
+                                        <label>Capacidad de Pago: <span id="pesoIngresosValue">30%</span></label>
+                                        <input type="range" class="form-input" min="0" max="100" value="30" id="pesoIngresos" oninput="updateScoring()">
                                     </div>
                                     <div class="form-group">
-                                        <label>Activos</label>
-                                        <input type="range" class="form-input" min="0" max="100" value="20" id="pesoActivos" onchange="updateScoring()">
-                                        <span id="pesoActivosValue">20%</span>
+                                        <label>Activos y Capital: <span id="pesoActivosValue">20%</span></label>
+                                        <input type="range" class="form-input" min="0" max="100" value="20" id="pesoActivos" oninput="updateScoring()">
                                     </div>
                                     <div class="form-group">
-                                        <label>Comportamiento</label>
-                                        <input type="range" class="form-input" min="0" max="100" value="10" id="pesoComportamiento" onchange="updateScoring()">
-                                        <span id="pesoComportamientoValue">10%</span>
+                                        <label>Colateral: <span id="pesoComportamientoValue">10%</span></label>
+                                        <input type="range" class="form-input" min="0" max="100" value="10" id="pesoComportamiento" oninput="updateScoring()">
                                     </div>
-                                    <small>Total: <span id="totalPonderacion">100%</span></small>
                                 </div>
                             </div>
                         </div>
                         <div class="col-2">
-                            <!-- Resultado del Scoring -->
                             <div class="card">
-                                <div class="card-header">
-                                    <h4>Score Calculado</h4>
-                                </div>
+                                <div class="card-header"><h4>Score Calculado</h4></div>
                                 <div class="card-body text-center">
-                                    <div class="score-circle">
-                                        <div class="score-text" id="scoreCalculado">82</div>
+                                    <div class="score-circle" id="scoring-circle">
+                                        <div class="score-text" id="scoreCalculado">--</div>
                                     </div>
-                                    <h4>Score: <span id="clasificacionScore">Excelente</span></h4>
-                                    <div class="progress">
-                                        <div class="progress-bar" style="width: 82%" id="barraScore"></div>
-                                    </div>
-                                    
-                                    <!-- Desglose del Score -->
+                                    <h4 id="clasificacionScore">--</h4>
+                                    <div class="progress"><div class="progress-bar" id="barraScore"></div></div>
                                     <div class="mt-3">
-                                        <h5>Desglose:</h5>
-                                        <p>Historial: <span id="puntajeHistorial">85</span> pts</p>
-                                        <p>Ingresos: <span id="puntajeIngresos">90</span> pts</p>
-                                        <p>Activos: <span id="puntajeActivos">75</span> pts</p>
-                                        <p>Comportamiento: <span id="puntajeComportamiento">80</span> pts</p>
+                                        <h5>Puntajes Base:</h5>
+                                        <p>Historial: <span id="puntajeHistorial">--</span> pts</p>
+                                        <p>Capacidad: <span id="puntajeIngresos">--</span> pts</p>
+                                        <p>Activos: <span id="puntajeActivos">--</span> pts</p>
+                                        <p>Colateral: <span id="puntajeComportamiento">--</span> pts</p>
                                     </div>
-
-                                    <!-- Decisión Automática -->
-                                    <div class="card mt-3" style="background: rgba(76, 175, 80, 0.1);">
-                                        <div class="card-body">
-                                            <h5><i class="fas fa-robot"></i> Decisión Automática</h5>
-                                            <p><strong>APROBACIÓN AUTOMÁTICA</strong></p>
-                                            <p>Score ≥ 70: Cumple criterios</p>
-                                            <p>Monto recomendado: S/ 50,000</p>
-                                            <p>Tasa sugerida: 11.5% anual</p>
-                                        </div>
-                                    </div>
-
-                                    <div class="d-flex gap-1 mt-3">
+                                    <div class="d-flex gap-1 mt-3" style="justify-content: center;">
                                         <button class="btn btn-success" onclick="aprobarAutomatico()">
                                             <i class="fas fa-check"></i> Aprobar
                                         </button>
-                                        <button class="btn btn-warning" onclick="enviarRevisionManual()">
-                                            <i class="fas fa-user"></i> Revisión Manual
+                                        <button class="btn btn-warning" onclick="enviarARevisionManual()">
+                                            <i class="fas fa-user"></i> Enviar a Revisión
                                         </button>
-                                
                                     </div>
                                 </div>
                             </div>
@@ -309,56 +180,28 @@
             </div>
         </section>
 
-        <!-- Sección Revisión Manual -->
         <section id="revision" class="content-section">
             <div class="card">
-                <div class="card-header">
-                    <h3><i class="fas fa-user-check"></i> Revisión Manual - Solicitud #005</h3>
-                </div>
+                <div class="card-header"><h3 id="revision-header"></h3></div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-3">
                             <div class="card">
-                                <div class="card-header">
-                                    <h4>Información Completa</h4>
-                                </div>
+                                <div class="card-header"><h4>Resumen del Caso</h4></div>
                                 <div class="card-body">
-                                    <p><strong>Cliente:</strong> <span id="revCliente">-</span></p>
-                                    <p><strong>Score Automático:</strong> <span id="revScore">-</span></p>
-                                    <p><strong>Monto Solicitado:</strong> S/ <span id="revMonto">-</span></p>
-                                    <p><strong>Monto Recomendado:</strong> S/ <span id="revMontoRecomendado">-</span></p>
-                                    <p><strong>Ingresos Mensuales:</strong> S/ <span id="revIngresos">-</span></p>
-                                    <p><strong>Ratio Deuda/Ingreso:</strong> <span id="revRatio">-</span></p>
-                                    <p><strong>Historial:</strong> <span id="revHistorial">-</span></p>
+                                    <p><strong>Cliente:</strong> <span id="revCliente"></span></p>
+                                    <p><strong>Monto Solicitado:</strong> <span id="revMonto"></span></p>
+                                    <p><strong>Score Previo:</strong> <span id="revScore"></span></p>
                                 </div>
                             </div>
                         </div>
                         <div class="col-3">
                             <div class="card">
-                                <div class="card-header">
-                                    <h4>Decisión Manual</h4>
-                                </div>
+                                <div class="card-header"><h4>Decisión Final</h4></div>
                                 <div class="card-body">
-                                    <div class="form-group">
-                                        <label>Decisión</label>
-                                        <select class="form-select" id="decisionManual">
-                                            <option value="">Seleccionar decisión</option>
-                                            <option value="aprobar">Aprobar</option>
-                                            <option value="rechazar">Rechazar</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Monto Aprobado (S/)</label>
-                                        <input type="number" class="form-input" id="montoManual" value="20000">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Tasa de Interés (%)</label>
-                                        <input type="number" class="form-input" id="tasaManual" value="13.5" step="0.1">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Observaciones</label>
-                                        <textarea class="form-input" id="observacionesManual" rows="4" placeholder="Justificación de la decisión..."></textarea>
-                                    </div>
+                                    <div class="form-group"><label for="decisionManual">Decisión</label><select class="form-select" id="decisionManual"><option value="">Seleccionar...</option><option value="aprobada">Aprobar</option><option value="rechazada">Rechazar</option></select></div>
+                                    <div class="form-group"><label for="montoManual">Monto Aprobado (S/)</label><input type="number" class="form-input" id="montoManual" placeholder="Ej: 15000.00"></div>
+                                    <div class="form-group"><label for="observacionesManual">Observaciones (Justificación)</label><textarea class="form-input" id="observacionesManual" rows="4"></textarea></div>
                                     <button class="btn btn-primary btn-block" onclick="guardarDecisionManual()">
                                         <i class="fas fa-save"></i> Guardar Decisión
                                     </button>
@@ -370,115 +213,22 @@
             </div>
         </section>
 
-        <!-- Sección Reportes -->
         <section id="reportes" class="content-section">
             <div class="card">
-                <div class="card-header">
-                    <h3><i class="fas fa-chart-bar"></i> Reportes de Evaluación</h3>
-                </div>
+                <div class="card-header"><h3><i class="fas fa-chart-bar"></i> Reportes de Evaluación</h3></div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-2">
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <h4 id="reporteEvaluacionesMes">-</h4>
-                                    <p>Evaluaciones este mes</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-2">
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <h4 id="reporteAprobaciones">-</h4>
-                                    <p>Aprobaciones</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-2">
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <h4 id="reporteTasaAprobacion">-</h4>
-                                    <p>Tasa de aprobación</p>
-                                </div>
-                            </div>
-                        </div>
+                        <div class="col-3"><div class="card text-center"><div class="card-body"><h4 id="reporteEvaluacionesMes">-</h4><p>Evaluaciones (Mes)</p></div></div></div>
+                        <div class="col-3"><div class="card text-center"><div class="card-body"><h4 id="reporteAprobaciones">-</h4><p>Aprobaciones (Mes)</p></div></div></div>
+                        <div class="col-3"><div class="card text-center"><div class="card-body"><h4 id="reporteTasaAprobacion">-</h4><p>Tasa de Aprobación</p></div></div></div>
                     </div>
-                    
-                    <div class="text-center mt-3">
-                        <button class="btn btn-primary" onclick="generarReporteCompleto()">
-                            <i class="fas fa-file-pdf"></i> Generar Reporte Completo
-                        </button>
-                    </div>
+                    <div class="text-center mt-3"><button class="btn btn-primary" id="btnGenerarReporte"><i class="fas fa-file-pdf"></i> Generar Reporte PDF</button></div>
                 </div>
             </div>
         </section>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="script.js"></script>
     <script src="evaluador.js"></script>
-    <script>
-        // Funciones específicas del panel de evaluación
-        
-        function updateScoring() {
-            // Actualizar valores de ponderación
-            const historial = document.getElementById('pesoHistorial').value;
-            const ingresos = document.getElementById('pesoIngresos').value;
-            const activos = document.getElementById('pesoActivos').value;
-            const comportamiento = document.getElementById('pesoComportamiento').value;
-            
-            document.getElementById('pesoHistorialValue').textContent = historial + '%';
-            document.getElementById('pesoIngresosValue').textContent = ingresos + '%';
-            document.getElementById('pesoActivosValue').textContent = activos + '%';
-            document.getElementById('pesoComportamientoValue').textContent = comportamiento + '%';
-            
-            const total = parseInt(historial) + parseInt(ingresos) + parseInt(activos) + parseInt(comportamiento);
-            document.getElementById('totalPonderacion').textContent = total + '%';
-            
-            // Recalcular score
-            calcularScoreRealTime();
-        }
-        
-        function aprobarAutomatico() {
-            showNotification('Solicitud aprobada automáticamente', 'success');
-        }
-        
-        function enviarRevisionManual() {
-            showNotification('Enviando a revisión manual...', 'info');
-            showSection('revision');
-        }
-        
-        function simularEscenarios() {
-            showNotification('Abriendo simulador de escenarios...', 'info');
-        }
-        
-        function guardarDecisionManual() {
-            const decision = document.getElementById('decisionManual').value;
-            if (!decision) {
-                showNotification('Debe seleccionar una decisión', 'error');
-                return;
-            }
-            
-            showNotification('Decisión guardada exitosamente', 'success');
-        }
-        
-        function generarNuevoEscenario() {
-            showNotification('Generando nuevo escenario...', 'info');
-        }
-        
-        function actualizarPendientes() {
-            showNotification('Actualizando lista de pendientes...', 'info');
-        }
-        
-        function verDocumento(tipo) {
-            showNotification(`Abriendo documento: ${tipo}`, 'info');
-        }
-        
-        // Inicializar scoring cuando se carga
-        document.addEventListener('DOMContentLoaded', function() {
-            loadUserData();
-           
-        });
-    </script>
 </body>
 </html>
